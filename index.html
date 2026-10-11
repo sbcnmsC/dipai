@@ -1,0 +1,1573 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#10131B">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="底牌">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="apple-touch-icon.png">
+<title>底牌</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@500;900&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@500;900&display=swap"></noscript>
+<style>
+/* Layout: a night table. Quiet ink ground and pale chrome; the flat-printed cards are the only loud objects, one hue per card type, one giant character as each card's suit. */
+:root{
+  --ink:#10131B;
+  --ink-2:#181C27;
+  --line:#2A3042;
+  --mist:#8D96AB;
+  --soft:#C3C9D8;
+  --moon:#E7EAF1;
+  --cobalt:#3552D6;
+  --vermilion:#D2381F;
+  --mustard:#E2B13A;
+  --pine:#2F7B68;
+  --porcelain:#E4E8EF;
+  --back:#1A2145;
+  --serif:"Noto Serif SC","Songti SC","STSong","SimSun",serif;
+  --sans:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  --grain:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .7 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{
+  margin:0;
+  background-color:var(--ink);
+  background-image:radial-gradient(90% 50% at 50% -8%,#1F2638 0%,transparent 70%);
+  color:var(--moon);
+  font:400 15px/1.6 var(--sans);
+  display:flex;justify-content:center;
+  -webkit-tap-highlight-color:transparent;
+  -webkit-text-size-adjust:100%;
+}
+button{font:inherit;color:inherit}
+#app{width:100%;max-width:480px;height:100%;padding-inline:16px;position:relative}
+.screen{height:100%;display:flex;flex-direction:column;min-height:0}
+.setup,.result{overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-width:none}
+.setup::-webkit-scrollbar,.result::-webkit-scrollbar{display:none}
+.muted{color:var(--mist)}
+
+/* buttons */
+.btn{height:52px;padding:0 20px;border-radius:6px;border:1px solid transparent;background:transparent;font:700 16px var(--sans);letter-spacing:.14em;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;transition:transform .12s,background .15s,border-color .15s}
+.btn:active{transform:translateY(1px)}
+.btn:focus-visible,.endbtn:focus-visible,.foul:focus-visible,.cardbox:focus-visible,.heat-opt:focus-visible,.x:focus-visible{outline:2px solid var(--moon);outline-offset:3px}
+.btn.primary{background:var(--moon);color:var(--ink)}
+.btn.ghost{border-color:var(--line);color:var(--moon)}
+.btn.link{height:40px;border:0;color:var(--mist);font-weight:500;letter-spacing:.06em;text-decoration:underline;text-underline-offset:4px}
+.btn.wide{width:100%}
+.btn[disabled]{opacity:.35;cursor:not-allowed}
+@media (hover:hover){.btn.ghost:hover{border-color:var(--mist)}.btn.primary:hover{background:#fff}}
+
+/* setup */
+.hero{position:relative;height:250px;flex:none;margin-inline:-16px;overflow:hidden}
+.eyebrow{margin:0;font:500 11px/1.9 var(--mono);letter-spacing:.16em;color:var(--mist)}
+.eyebrow span{display:block}
+.hero .eyebrow{position:absolute;left:16px;top:16px}
+.hero h1{position:absolute;left:12px;bottom:0;margin:0;font:900 clamp(76px,24vw,100px)/.9 var(--serif);letter-spacing:.02em}
+.fan{position:absolute;right:-34px;top:0;width:200px;height:250px}
+.mini{position:absolute;left:50%;bottom:10px;width:92px;margin-left:-46px;aspect-ratio:5/7;border-radius:12px;background:var(--c);color:var(--on);display:grid;place-items:center;font:900 46px/1 var(--serif);transform-origin:50% 100%;transform:rotate(var(--r));box-shadow:0 10px 24px rgba(0,0,0,.45);animation:fanopen 1s cubic-bezier(.2,.8,.2,1) both;overflow:hidden}
+.mini::before{content:"";position:absolute;inset:5px;border:1px solid color-mix(in srgb,var(--on) 30%,transparent);border-radius:8px}
+.mini::after{content:"";position:absolute;inset:0;background-image:var(--grain);opacity:.12}
+@keyframes fanopen{from{transform:rotate(0deg)}}
+.lede{margin:16px 0 0;color:var(--soft);max-width:30em;text-wrap:balance}
+.block{margin-top:28px}
+.lab{display:flex;justify-content:space-between;align-items:baseline;margin:0 0 12px;padding-bottom:10px;border-bottom:1px solid var(--line);font:500 12px/1 var(--sans);letter-spacing:.22em;color:var(--mist)}
+.lab .n{font:500 12px var(--mono);letter-spacing:.08em}
+.chips{list-style:none;margin:0 0 12px;padding:0;display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:flex;align-items:center;height:40px;padding:0 4px 0 14px;border:1px solid var(--line);border-radius:999px;background:var(--ink-2);font-weight:500}
+.x{width:32px;height:32px;border:0;border-radius:50%;background:none;color:var(--mist);font-size:20px;line-height:1;cursor:pointer}
+.addrow{display:flex;gap:8px}
+.addrow input{flex:1;min-width:0;height:48px;padding:0 14px;border:1px solid var(--line);border-radius:6px;background:var(--ink-2);color:var(--moon);font:16px var(--sans)}
+.addrow input:focus-visible{outline:2px solid var(--moon);outline-offset:2px}
+.addrow input::placeholder{color:var(--mist)}
+.addrow .btn{height:48px}
+.hint2{margin:10px 0 0;font-size:13px;color:var(--mist)}
+.heats{display:grid;gap:8px}
+.heat-opt{display:flex;gap:16px;align-items:center;text-align:left;padding:14px;border:1px solid var(--line);border-radius:6px;background:transparent;cursor:pointer}
+.heat-opt[aria-pressed="true"]{border-color:var(--moon);background:var(--ink-2)}
+.bars{display:flex;align-items:flex-end;gap:3px;height:28px;flex:none}
+.bars i{width:6px;border-radius:1px;background:var(--line)}
+.bars i:nth-child(1){height:8px}.bars i:nth-child(2){height:15px}.bars i:nth-child(3){height:22px}.bars i:nth-child(4){height:28px}
+.heat-opt[data-lv="1"] i:nth-child(-n+1),.heat-opt[data-lv="2"] i:nth-child(-n+2),.heat-opt[data-lv="3"] i:nth-child(-n+3),.heat-opt[data-lv="4"] i{background:var(--vermilion)}
+.ht b{display:block;font:900 20px/1.25 var(--serif)}
+.ht small{display:block;color:var(--mist);font-size:13px;line-height:1.5}
+.foot{position:sticky;bottom:0;margin-top:auto;padding:18px 0 12px;background:linear-gradient(to top,var(--ink) 62%,transparent);display:flex;flex-direction:column;gap:8px}
+.foot .need{margin:0;text-align:center;font-size:13px;color:var(--mist)}
+
+/* table */
+.table{padding-block:10px 12px;gap:10px}
+.bar{display:flex;align-items:center;gap:12px;flex:none;height:32px}
+.cnt{font:500 12px var(--mono);letter-spacing:.08em;color:var(--mist);white-space:nowrap}
+.cnt b{color:var(--moon);font-weight:500}
+.track{position:relative;flex:1;height:4px;border-radius:2px;overflow:hidden;background:linear-gradient(90deg,#4F8FD6,#E8B04A 55%,var(--vermilion))}
+.track i{position:absolute;right:0;top:0;bottom:0;width:80%;background:var(--line);transition:width .7s ease}
+.endbtn{padding:6px 0 6px 8px;border:0;background:none;color:var(--mist);font:500 13px var(--sans);letter-spacing:.14em;cursor:pointer}
+.rulebar{display:flex;align-items:center;gap:10px;flex:none;padding:8px 6px 8px 12px;border:1px solid var(--pine);border-radius:6px;background:color-mix(in srgb,var(--pine) 18%,var(--ink))}
+.rulebar .tag{flex:none;font:700 11px var(--sans);letter-spacing:.2em;color:#8FD4BE}
+.rulebar .rt{flex:1;min-width:0;font-size:14px;line-height:1.4}
+.foul{flex:none;height:32px;padding:0 12px;border:1px solid var(--pine);border-radius:6px;background:none;color:#8FD4BE;font:500 13px var(--sans);letter-spacing:.1em;cursor:pointer}
+.who{flex:none}
+.whorow{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.whorow small{font:500 11px var(--sans);letter-spacing:.3em;color:var(--mist)}
+.stat{font:400 12px var(--mono);color:var(--mist);text-align:right}
+.who h2{margin:2px 0 0;font:900 38px/1.12 var(--serif);overflow-wrap:anywhere}
+.stage{flex:1;min-height:0;container-type:size;display:grid;place-items:center}
+.cardbox{position:relative;width:min(100cqw,calc(100cqh * 5 / 7));aspect-ratio:5/7;container-type:inline-size;perspective:1400px;cursor:pointer}
+.cardbox.idle{cursor:default}
+.cardbox.deal{animation:deal .6s cubic-bezier(.2,.8,.25,1) both}
+@keyframes deal{from{opacity:0;transform:translateY(46px) rotate(3deg) scale(.96)}to{opacity:1;transform:none}}
+.card{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .85s cubic-bezier(.2,.75,.25,1)}
+.card.open{transform:rotateY(180deg)}
+.back{transition:visibility 0s linear .42s}
+.face{visibility:hidden;transition:visibility 0s linear .42s}
+.card.open .back{visibility:hidden}
+.card.open .face{visibility:visible}
+.seal,.tap{backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.back,.face{position:absolute;inset:0;border-radius:5cqw;overflow:hidden;backface-visibility:hidden;-webkit-backface-visibility:hidden;box-shadow:0 18px 40px rgba(0,0,0,.45)}
+.back{background:
+  repeating-linear-gradient(45deg,rgba(150,165,255,.11) 0 1px,transparent 1px 3.4cqw),
+  repeating-linear-gradient(-45deg,rgba(150,165,255,.11) 0 1px,transparent 1px 3.4cqw),
+  var(--back);
+  border:1px solid #39427A}
+.back::before{content:"";position:absolute;inset:3.6cqw;border:1px solid rgba(160,172,255,.38);border-radius:3cqw}
+.back::after{content:"";position:absolute;inset:0;background-image:var(--grain);opacity:.14}
+.seal{position:absolute;left:50%;top:46%;width:38cqw;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;border:1px solid rgba(190,200,255,.55);background:var(--back);display:grid;place-items:center;z-index:1}
+.seal::before{content:"";position:absolute;inset:2.2cqw;border:1px solid rgba(190,200,255,.25);border-radius:50%}
+.seal b{font:900 21cqw/1 var(--serif);color:#CBD2FF}
+.tap{position:absolute;left:0;right:0;bottom:12cqw;text-align:center;z-index:1;font:500 3.6cqw var(--sans);letter-spacing:.3em;color:#9AA5E6}
+.t-truth{--c:var(--cobalt);--on:#F1F3FF}
+.t-dare{--c:var(--vermilion);--on:#FFF4EF}
+.t-vote{--c:var(--mustard);--on:#1F1708}
+.t-rule{--c:var(--pine);--on:#EAF6F1}
+.t-fate{--c:var(--porcelain);--on:#161B2C}
+.t-secret{--c:#161A2E;--on:#D5DAF2}
+.t-duo{--c:#B8386A;--on:#FFF0F6}
+.t-choice{--c:#5A3FB0;--on:#F3EEFF}
+.t-never{--c:#1F7A92;--on:#EAF9FD}
+.t-bomb{--c:#1B1C23;--on:#FF9A4D}
+.face.t-bomb{background-image:repeating-linear-gradient(135deg,rgba(255,138,61,.08) 0 2px,transparent 2px 4cqw)}
+.c-title.sm{font-size:5cqw;opacity:.8}
+.c-text.copt{display:flex;gap:2.6cqw;align-items:baseline}
+.c-text.copt i{flex:none;font:500 3.6cqw/1 var(--mono);font-style:normal;padding:1cqw 1.8cqw;border:1px solid currentColor;border-radius:1cqw;opacity:.85}
+.c-or{margin:0;text-align:center;font:500 3.4cqw var(--sans);letter-spacing:.3em;opacity:.7}
+.face:not([class*="t-"]){--c:var(--cobalt);--on:#F1F3FF}
+.face{background:var(--c);color:var(--on);padding:7cqw 7cqw 6.5cqw;display:flex;flex-direction:column;transform:rotateY(180deg)}
+.face::before{content:"";position:absolute;inset:3.2cqw;border:1px solid color-mix(in srgb,var(--on) 30%,transparent);border-radius:2.6cqw;pointer-events:none}
+.face::after{content:"";position:absolute;inset:0;background-image:var(--grain);opacity:.12;pointer-events:none}
+.face.t-secret{background-image:repeating-linear-gradient(45deg,rgba(150,165,255,.07) 0 1px,transparent 1px 3.4cqw),repeating-linear-gradient(-45deg,rgba(150,165,255,.07) 0 1px,transparent 1px 3.4cqw)}
+.mark{position:absolute;right:-5cqw;bottom:-16cqw;font:900 84cqw/1 var(--serif);color:var(--on);opacity:.09;pointer-events:none;user-select:none}
+.c-top{position:relative;z-index:1;display:flex;justify-content:space-between;align-items:flex-start}
+.idx{display:flex;flex-direction:column;align-items:center;line-height:1}
+.idx b{font:900 9cqw/1 var(--serif)}
+.idx span{margin-top:1.8cqw;margin-right:-.2em;font:500 3.2cqw/1 var(--sans);letter-spacing:.2em}
+.idx.inv{transform:rotate(180deg)}
+.meta{display:flex;flex-direction:column;align-items:flex-end;gap:2cqw}
+.heat{display:flex;align-items:flex-end;gap:.9cqw;height:4.2cqw}
+.heat i{width:1.6cqw;border-radius:.3cqw;background:currentColor;opacity:.25}
+.heat i:nth-child(1){height:30%}.heat i:nth-child(2){height:55%}.heat i:nth-child(3){height:78%}.heat i:nth-child(4){height:100%}
+.heat i.on{opacity:1}
+.meta .n{font:500 3cqw/1 var(--mono);letter-spacing:.06em;opacity:.7}
+.c-mid{position:relative;z-index:1;flex:1;display:flex;flex-direction:column;justify-content:center;gap:3.4cqw;min-height:0}
+.c-title{margin:0;font:900 10cqw/1.15 var(--serif)}
+.c-text{margin:0;font:500 var(--fs,7cqw)/1.55 var(--serif);text-wrap:pretty}
+.c-bot{position:relative;z-index:1;display:flex;justify-content:space-between;align-items:flex-end;gap:3cqw}
+.hint{max-width:72%;font:500 3.3cqw/1.6 var(--sans);letter-spacing:.08em;opacity:.82}
+.cover{position:absolute;inset:0;z-index:3;display:grid;place-content:center;justify-items:center;gap:3cqw;background:var(--c);color:var(--on);touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;cursor:pointer}
+.cover b{font:900 24cqw/1 var(--serif)}
+.cover span{font:500 4cqw var(--sans);letter-spacing:.3em;margin-right:-.3em}
+.card.peek .cover{opacity:0}
+.panel{flex:none;display:flex;flex-direction:column;gap:10px;max-height:46%;overflow-y:auto;padding-top:4px}
+.say{margin:0;line-height:1.55}
+.say b{font:900 17px var(--serif)}
+.say.muted{color:var(--mist);font-size:14px}
+.row{display:grid;grid-template-columns:1.5fr 1fr;gap:10px}
+.row.eq{grid-template-columns:1fr 1fr}
+.pick{display:flex;flex-wrap:wrap;gap:8px}
+.pick .btn{height:44px;padding:0 16px;font-size:15px;letter-spacing:.04em}
+.pen{margin:0;padding:14px 16px;border:1px dashed var(--mist);border-radius:6px;font:500 17px/1.55 var(--serif)}
+.pnote{margin:0;font-size:13px;color:var(--mist)}
+
+/* result */
+.result{padding-top:16px}
+.result h1{margin:12px 0 4px;font:900 72px/1 var(--serif)}
+.award{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 16px;align-items:center;padding:16px 0;border-bottom:1px solid var(--line)}
+.award h3{margin:0;display:flex;align-items:center;gap:10px;font:900 22px/1.2 var(--serif)}
+.award h3::before{content:"";width:10px;height:14px;border-radius:2px;background:var(--k,var(--mist));flex:none}
+.award p{margin:0;font-size:15px;overflow-wrap:anywhere}
+.award .num{grid-column:2;grid-row:1/3;text-align:right;font:500 30px/1 var(--mono)}
+.award .num small{display:block;margin-top:6px;font:400 11px var(--sans);color:var(--mist);letter-spacing:.1em}
+.tblwrap{overflow-x:auto;margin-top:24px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{padding:8px 6px;border-bottom:1px solid var(--line);text-align:right;font:500 11px var(--sans);letter-spacing:.14em;color:var(--mist);white-space:nowrap}
+td{padding:10px 6px;border-bottom:1px solid var(--line);text-align:right;font:400 14px var(--mono);font-variant-numeric:tabular-nums}
+th:first-child,td:first-child{text-align:left;padding-left:0}
+td:first-child{font-family:var(--sans);font-weight:500}
+#report{display:block;width:100%;margin-top:24px;padding:12px;border:1px solid var(--line);border-radius:6px;background:var(--ink-2);color:var(--mist);font:400 12px/1.7 var(--mono);resize:none}
+.empty{margin:22px 0 0;color:var(--mist)}
+
+/* deck library */
+.seg{display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:8px}
+.segbtn{height:44px;padding:0 6px;border:1px solid var(--line);border-radius:6px;background:none;font:500 14px var(--sans);letter-spacing:.04em;cursor:pointer}
+.segbtn[aria-pressed="true"]{border-color:var(--moon);background:var(--ink-2)}
+.segbtn:focus-visible,.fchip:focus-visible,.sw:focus-visible,.dview:focus-visible,.mb:focus-visible,#dq:focus-visible{outline:2px solid var(--moon);outline-offset:2px}
+.deck{overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-width:none}
+.deck::-webkit-scrollbar{display:none}
+.dtop{position:sticky;top:0;z-index:5;margin-inline:-16px;padding:10px 16px;display:flex;flex-direction:column;gap:8px;background:var(--ink);border-bottom:1px solid var(--line)}
+.dhead{display:flex;align-items:center;gap:12px}
+.dhead .endbtn{padding-left:0}
+.dhead h2{margin:0;flex:1;font:900 26px/1.2 var(--serif)}
+.chiprow{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin-inline:-16px;padding-inline:16px}
+.chiprow::-webkit-scrollbar{display:none}
+.fchip{flex:none;height:34px;padding:0 12px;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;background:none;font:500 13px var(--sans);white-space:nowrap;cursor:pointer}
+.fchip small{font:400 11px var(--mono);color:var(--mist)}
+.fchip[aria-pressed="true"]{border-color:var(--moon);background:var(--moon);color:var(--ink)}
+.fchip[aria-pressed="true"] small{color:var(--ink);opacity:.6}
+.dtools{display:flex;flex-direction:column;gap:10px;padding-top:12px}
+#dq{width:100%;height:42px;padding:0 14px;border:1px solid var(--line);border-radius:6px;background:var(--ink-2);color:var(--moon);font:16px var(--sans)}
+#dq::placeholder{color:var(--mist)}
+.bulk{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.bulkbtns{display:flex;gap:8px}
+.bulkbtns .btn{height:34px;padding:0 12px;font-size:13px;letter-spacing:.04em}
+.dlist{list-style:none;margin:0;padding:4px 0 24px}
+.drow{display:flex;align-items:stretch;gap:8px;border-bottom:1px solid var(--line)}
+.dview{flex:1;min-width:0;display:flex;gap:12px;align-items:flex-start;padding:14px 0;border:0;background:none;text-align:left;cursor:pointer}
+.dsw{flex:none;width:32px;height:44px;display:grid;place-items:center;border-radius:5px;background:var(--c);color:var(--on);font:900 16px var(--serif)}
+.dtx{min-width:0;display:flex;flex-direction:column;gap:4px}
+.dt{font:500 15px/1.55 var(--serif);overflow-wrap:anywhere}
+.dm{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font:400 12px var(--sans);color:var(--mist)}
+.lv{display:inline-flex;align-items:flex-end;gap:2px;height:12px}
+.lv i{width:3px;border-radius:1px;background:var(--line)}
+.lv i:nth-child(1){height:4px}.lv i:nth-child(2){height:6px}.lv i:nth-child(3){height:9px}.lv i:nth-child(4){height:12px}
+.lv i.on{background:var(--vermilion)}
+.tagc{padding:0 6px;border:1px solid var(--mist);border-radius:3px;font-size:11px;line-height:1.6}
+.drow.off .dview{opacity:.38}
+.dact{flex:none;display:flex;align-items:center}
+.mb{height:36px;padding:0 8px;border:0;background:none;color:var(--mist);font:500 13px var(--sans);letter-spacing:.06em;cursor:pointer}
+.mb.danger{color:#E7806F}
+.sw{position:relative;flex:none;width:48px;height:36px;border:0;background:none;cursor:pointer}
+.sw::before{content:"";position:absolute;left:2px;top:5px;width:44px;height:26px;border-radius:13px;background:var(--line);transition:background .15s}
+.sw::after{content:"";position:absolute;left:5px;top:8px;width:20px;height:20px;border-radius:50%;background:var(--mist);transition:transform .15s,background .15s}
+.sw[aria-checked="true"]::before{background:var(--pine)}
+.sw[aria-checked="true"]::after{transform:translateX(18px);background:#fff}
+.dempty{padding:40px 0;text-align:center;color:var(--mist)}
+.lab2{margin:0;font:500 12px var(--sans);letter-spacing:.2em;color:var(--mist)}
+.sheet{max-height:94%;overflow-y:auto}
+.sheet textarea{width:100%;min-height:96px;padding:12px 14px;border:1px solid var(--line);border-radius:6px;background:var(--ink);color:var(--moon);font:16px/1.6 var(--serif);resize:vertical}
+.sheet textarea:focus-visible{outline:2px solid var(--moon);outline-offset:2px}
+.pick .btn[aria-pressed="true"]{border-color:var(--moon);background:var(--moon);color:var(--ink)}
+.pv{position:relative;width:min(64vw,260px);aspect-ratio:5/7;margin:0 auto;container-type:inline-size;perspective:1400px}
+.pv .card{transition:none}
+.pv .cover{display:none}
+.center{text-align:center}
+
+/* dice mode */
+.dicebar{flex:none;display:flex;flex-wrap:wrap;gap:2px 16px;font:400 12px var(--sans);color:var(--mist)}
+.dicebar b{margin-left:4px;color:var(--moon);font-weight:500}
+.dice{display:flex;justify-content:center;gap:18px;padding:2px 0}
+.die{display:flex;flex-direction:column;align-items:center;gap:6px}
+.dface{width:64px;height:64px;display:grid;place-items:center;border-radius:14px;border:1px solid var(--line);background:var(--c,var(--ink-2));color:var(--on,var(--moon));font:900 30px/1 var(--serif);box-shadow:0 8px 18px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.14)}
+.dface b{font:inherit}
+.dface.sm{font-size:19px}
+.dface.off{opacity:.45}
+.dface.lvl.l1{--c:#2E6FB5;--on:#EAF3FF}
+.dface.lvl.l2{--c:#C9972F;--on:#20180A}
+.dface.lvl.l3{--c:#D5602A;--on:#FFF1E8}
+.dface.lvl.l4{--c:#C42A1B;--on:#FFF0EC}
+.die small{margin-right:-.14em;font:500 11px var(--sans);letter-spacing:.14em;color:var(--mist)}
+.die.rolling .dface{animation:tumble .42s linear infinite}
+.die.land .dface{animation:land .38s cubic-bezier(.2,1.6,.4,1)}
+@keyframes tumble{to{transform:rotate(360deg)}}
+@keyframes land{from{transform:scale(1.3) rotate(-10deg)}}
+
+/* mode picker */
+.grp{margin:18px 0 8px;font:500 11px var(--sans);letter-spacing:.3em;color:var(--mist)}
+.grp:first-child{margin-top:0}
+.modegrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mode{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:0;padding:12px 12px 14px;border:1px solid var(--line);border-radius:8px;background:transparent;text-align:left;cursor:pointer}
+.mode:focus-visible{outline:2px solid var(--moon);outline-offset:2px}
+.mode[aria-pressed="true"]{border-color:var(--moon);background:var(--ink-2)}
+.mh{display:flex;justify-content:space-between;align-items:flex-start;width:100%;gap:8px}
+.mg{font:900 32px/1 var(--serif);color:var(--k)}
+.mtag{font:500 11px/1.6 var(--mono);color:var(--mist);white-space:nowrap}
+.mtag.warn{color:#E7806F}
+.mn{margin-top:6px;font:900 17px/1.3 var(--serif)}
+.md{font-size:12px;line-height:1.55;color:var(--mist);text-wrap:balance}
+
+/* arena: the play area for modes that do not use a single card */
+.arena{flex:1;min-height:0;container-type:size;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;overflow-y:auto;overflow-x:hidden;scrollbar-width:none}
+.arena::-webkit-scrollbar{display:none}
+.arena>:first-child{margin-top:auto}
+.arena>:last-child{margin-bottom:auto}
+.arena .eyebrow{text-align:center}
+.arena .pnote{text-align:center}
+.arena .say{text-align:center}
+.big{font:900 clamp(40px,15vw,64px)/1.1 var(--serif)}
+.big2{margin:0;font:500 20px/1.45 var(--serif)}
+.big2 b{font-weight:900}
+.stamp{flex:none;width:96px;height:96px;display:grid;place-items:center;border-radius:50%;border:1px solid var(--mist);background:var(--ink-2);font:900 44px/1 var(--serif)}
+.quote{width:100%;padding:16px;border:1px solid var(--line);border-radius:8px;background:var(--ink-2);font:500 19px/1.6 var(--serif);text-align:left;overflow-wrap:anywhere}
+.quote small{display:block;margin-bottom:6px;font:500 11px var(--sans);letter-spacing:.2em;color:var(--mist)}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.opt{display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-width:0;min-height:88px;padding:12px 14px;border:1px solid var(--line);border-radius:8px;background:var(--ink-2);text-align:left;cursor:pointer}
+.opt:active{transform:translateY(1px)}
+.opt:focus-visible{outline:2px solid var(--moon);outline-offset:2px}
+.opt b{font:500 12px var(--mono);color:var(--mist)}
+.opt span{font:500 16px/1.45 var(--serif);overflow-wrap:anywhere}
+.tally{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tcol{min-width:0;display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 8px;border:1px solid var(--line);border-radius:8px;background:var(--ink-2)}
+.tcol.hit{border-color:var(--moon)}
+.tn{font:500 12px var(--mono);color:var(--mist)}
+.tn:empty,.opt b:empty{display:none}
+.tq{min-height:2.9em;font:500 14px/1.45 var(--serif);overflow-wrap:anywhere}
+.tc{font:500 36px/1.1 var(--mono)}
+.tw{font-size:13px;line-height:1.5;color:var(--soft);overflow-wrap:anywhere}
+
+/* bomb */
+.bomb{position:relative;flex:none;width:min(46cqw,190px);aspect-ratio:1;display:grid;place-items:center;border-radius:50%;background:radial-gradient(circle at 35% 30%,#3D4152,#14161D 72%);border:1px solid #3A3F52;box-shadow:0 14px 34px rgba(0,0,0,.5)}
+.bomb.live{animation:throb var(--pulse,1.1s) ease-in-out infinite}
+@keyframes throb{50%{transform:scale(1.07)}}
+.bglyph{font:900 min(24cqw,96px)/1 var(--serif);color:#FF8A3D}
+.fuse{position:absolute;top:-9%;right:20%;width:3px;height:20%;background:var(--mist);transform:rotate(24deg);transform-origin:50% 100%;border-radius:2px}
+.fuse::after{content:"";position:absolute;top:-6px;left:-4px;width:11px;height:11px;border-radius:50%;background:#FFB347;box-shadow:0 0 12px 3px #FF8A3D}
+.bomb.live .fuse::after{animation:spark .28s steps(2) infinite}
+@keyframes spark{50%{opacity:.35}}
+.bomb.boom{background:radial-gradient(circle,#FFC15A,#D2381F 72%);border-color:#FF8A3D;animation:boom .55s ease-out both}
+.bomb.boom .bglyph{color:#1A0D08}
+.bomb.boom .fuse{display:none}
+@keyframes boom{from{transform:scale(.7)}60%{transform:scale(1.14)}}
+.bcat{margin:0;font:900 clamp(30px,10vw,42px)/1.2 var(--serif)}
+
+/* spin */
+.wheel{position:relative;flex:none;width:min(84cqw,340px,calc(100cqh - 34px));aspect-ratio:1;border-radius:50%;border:1px solid var(--line);background:radial-gradient(circle,var(--ink-2) 0,var(--ink) 100%)}
+.wn{position:absolute;transform:translate(-50%,-50%);padding:4px 9px;border:1px solid var(--line);border-radius:999px;background:var(--ink);font:500 14px/1.4 var(--sans);white-space:nowrap;transition:background .2s,color .2s}
+.wn.hit{background:var(--moon);color:var(--ink);border-color:var(--moon)}
+.wn.hit2{background:var(--mustard);color:#1F1708;border-color:var(--mustard)}
+.needle{position:absolute;left:calc(50% - 3px);bottom:50%;width:6px;height:30%;transform-origin:50% 100%;transition:transform 3.4s cubic-bezier(.12,.72,.12,1)}
+.needle i{position:absolute;inset:0;border-radius:3px 3px 0 0;background:linear-gradient(to top,var(--mist),var(--moon))}
+.needle i::before{content:"";position:absolute;left:-6px;top:-12px;border-left:9px solid transparent;border-right:9px solid transparent;border-bottom:16px solid var(--moon)}
+.hub{position:absolute;left:calc(50% - 9px);top:calc(50% - 9px);width:18px;height:18px;border-radius:50%;background:var(--moon)}
+
+/* speed duel */
+.duel{width:100%;flex:1;min-height:200px;display:flex;flex-direction:column;gap:8px}
+.arena>.duel:first-child{margin-top:0}
+.arena>.duel:last-child{margin-bottom:0}
+.pad{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;border:1px solid var(--line);border-radius:12px;background:var(--ink-2);touch-action:manipulation;-webkit-user-select:none;user-select:none;cursor:pointer;transition:background .12s}
+.pad.p1{transform:rotate(180deg)}
+.pn{font:900 28px/1.2 var(--serif)}
+.pt{font:500 13px var(--sans);letter-spacing:.2em;color:var(--mist)}
+.pad.go,.pad.win{background:var(--pine);border-color:#8FD4BE}
+.pad.go .pt{color:var(--moon);font-size:22px;font-weight:700}
+.pad.win .pt{color:var(--moon)}
+.pad.lose{opacity:.5}
+.vs{flex:none;font:500 12px var(--mono);letter-spacing:.3em;color:var(--mist);text-align:center}
+.cap{margin:12px 0 0;font-size:12px;line-height:1.7;color:var(--mist)}
+
+/* overlays */
+.modal{position:fixed;inset:0;z-index:20;display:flex;align-items:flex-end;justify-content:center;background:rgba(5,7,12,.68)}
+.sheet{width:100%;max-width:480px;display:flex;flex-direction:column;gap:14px;padding:20px 16px calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink-2);border:1px solid var(--line);border-bottom:0;border-radius:14px 14px 0 0;animation:rise .28s ease-out}
+@keyframes rise{from{transform:translateY(24px);opacity:0}}
+.toast{position:fixed;left:50%;top:calc(12px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:30;width:max-content;max-width:calc(100% - 32px);padding:10px 16px;border-radius:6px;background:var(--moon);color:var(--ink);font:500 14px/1.45 var(--sans);text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.4);animation:tin .25s ease-out}
+@keyframes tin{from{opacity:0;margin-top:-8px}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+</style>
+
+</head>
+<body>
+<div id="app">
+  <section id="setup" class="screen setup">
+    <div class="hero">
+      <p class="eyebrow"><span>私密牌局</span><span>2–8 人</span><span>传着手机玩</span></p>
+      <div class="fan" aria-hidden="true">
+        <div class="mini t-truth" style="--r:-28deg">真</div>
+        <div class="mini t-dare" style="--r:-9deg">险</div>
+        <div class="mini t-vote" style="--r:10deg">指</div>
+        <div class="mini t-fate" style="--r:29deg">运</div>
+      </div>
+      <h1>底牌</h1>
+    </div>
+    <p class="lede">十种玩法，一部手机传着玩。题目会随着局数一点点升温。</p>
+
+    <div class="block">
+      <p class="lab"><span>谁在场</span><span class="n" id="cnt">4 / 8</span></p>
+      <ul class="chips" id="chips"></ul>
+      <form class="addrow" id="addf" autocomplete="off">
+        <input id="nameIn" type="text" maxlength="6" placeholder="输入名字，最多 6 个字" enterkeyhint="done" aria-label="玩家名字">
+        <button class="btn ghost" type="submit">加入</button>
+      </form>
+      <p class="hint2">现在的名字只是示例，移除后换成真实的人。</p>
+    </div>
+
+    <div class="block">
+      <p class="lab"><span>玩法</span><span class="n">10 种</span></p>
+      <div id="modes" role="group" aria-label="玩法"></div>
+      <p class="hint2" id="modeHint"></p>
+    </div>
+
+    <div class="block">
+      <p class="lab"><span>牌库</span><span class="n" id="deckStat"></span></p>
+      <div class="seg" role="group" aria-label="牌库模式">
+        <button class="segbtn" data-act="deckmode" data-m="builtin" aria-pressed="false" type="button">内置</button>
+        <button class="segbtn" data-act="deckmode" data-m="mix" aria-pressed="true" type="button">内置 + 自定义</button>
+        <button class="segbtn" data-act="deckmode" data-m="custom" aria-pressed="false" type="button">仅自定义</button>
+      </div>
+      <p class="hint2" id="deckHint"></p>
+      <button class="btn ghost wide" data-act="opendeck" type="button" style="margin-top:12px">查看 / 编辑牌库</button>
+    </div>
+
+    <div class="block">
+      <p class="lab"><span>温度</span></p>
+      <div class="heats" role="group" aria-label="温度">
+        <button class="heat-opt" data-act="heat" data-h="mild" data-lv="1" aria-pressed="false" type="button"><span class="bars"><i></i><i></i><i></i><i></i></span><span class="ht"><b>微醺</b><small>以轻松好笑的牌为主，适合刚开场。</small></span></button>
+        <button class="heat-opt" data-act="heat" data-h="ramp" data-lv="2" aria-pressed="true" type="button"><span class="bars"><i></i><i></i><i></i><i></i></span><span class="ht"><b>渐进</b><small>从破冰开始，一路升温，最后进入大尺度。</small></span></button>
+        <button class="heat-opt" data-act="heat" data-h="late" data-lv="3" aria-pressed="false" type="button"><span class="bars"><i></i><i></i><i></i><i></i></span><span class="ht"><b>上头</b><small>直接进入深夜话题，越界为主，偶尔失控。</small></span></button>
+        <button class="heat-opt" data-act="heat" data-h="wild" data-lv="4" aria-pressed="false" type="button"><span class="bars"><i></i><i></i><i></i><i></i></span><span class="ht"><b>失控</b><small>尺度很大，直奔露骨和刺激，确认大家都愿意再选。</small></span></button>
+      </div>
+    </div>
+
+
+    <div class="foot">
+      <p class="need" id="need" hidden>至少需要 2 个人</p>
+      <button class="btn primary wide" id="start" data-act="start" type="button">开局</button>
+    </div>
+  </section>
+
+  <section id="table" class="screen table" hidden>
+    <div class="bar">
+      <span class="cnt">第 <b id="cnt2">01</b> <span id="cntw">张</span></span>
+      <div class="track" title="温度"><i id="heatcover"></i></div>
+      <button class="endbtn" data-act="end" type="button">收局</button>
+    </div>
+    <div id="rulebar" class="rulebar" hidden></div>
+    <div class="who">
+      <div class="whorow"><small id="whoLab">轮到</small><span class="stat" id="whoStat"></span></div>
+      <h2 id="whoName"></h2>
+    </div>
+    <div id="dicebar" class="dicebar" hidden></div>
+    <div id="stagebox" class="stage"><div id="cardbox" class="cardbox" data-act="flip" role="button" tabindex="0" aria-label="翻开这张牌"></div></div>
+    <div id="arena" class="arena" hidden></div>
+    <div id="panel" class="panel"></div>
+  </section>
+
+  <section id="deck" class="screen deck" hidden>
+    <div class="dtop">
+      <div class="dhead">
+        <button class="endbtn" data-act="closedeck" type="button">‹ 返回</button>
+        <h2>牌库</h2>
+        <span class="cnt" id="dcount"></span>
+      </div>
+      <div class="chiprow" id="fType"></div>
+      <div class="chiprow" id="fLevel"></div>
+    </div>
+    <div class="dtools">
+      <p class="pnote" id="dnote" hidden></p>
+      <input id="dq" type="search" placeholder="搜索牌面文字" autocomplete="off" aria-label="搜索牌面文字">
+      <div class="bulk">
+        <span class="pnote">当前筛选下的内置牌</span>
+        <div class="bulkbtns">
+          <button class="btn ghost" data-act="bulkon" type="button">全部启用</button>
+          <button class="btn ghost" data-act="bulkoff" type="button">全部停用</button>
+        </div>
+      </div>
+    </div>
+    <ul class="dlist" id="dlist"></ul>
+    <div class="foot"><button class="btn primary wide" data-act="newcard" type="button">新增自定义牌</button></div>
+  </section>
+
+  <section id="result" class="screen result" hidden>
+    <div id="resBody"></div>
+    <div class="foot">
+      <button class="btn primary wide" data-act="copy" type="button">复制战报</button>
+      <div class="row eq">
+        <button class="btn ghost" data-act="again" type="button">再来一局</button>
+        <button class="btn ghost" data-act="home" type="button">回到首页</button>
+      </div>
+    </div>
+  </section>
+
+  <div id="modal" class="modal" hidden></div>
+  <div id="toast" class="toast" role="status" hidden></div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+const $=(s,r)=>(r||document).querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const rnd=n=>Math.floor(Math.random()*n);
+const pick=a=>a[rnd(a.length)];
+const store={
+  get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+};
+
+/* ---------- cards ---------- */
+const T={
+  truth:{name:'真心话',ch:'真',hint:'答得短，答得真'},
+  dare:{name:'大冒险',ch:'险',hint:'做到位，别敷衍'},
+  vote:{name:'全员',ch:'指',hint:'三二一，同时指向一个人'},
+  rule:{name:'场规',ch:'令',hint:'立下即生效，直到被新规替换'},
+  fate:{name:'命运',ch:'运',hint:'牌自己找上了你'},
+  secret:{name:'暗牌',ch:'密',hint:'背对其他人，再按住偷看'},
+  duo:{name:'对问',ch:'对',hint:'两个人，都要完成'},
+  choice:{name:'二选一',ch:'择',hint:'没有标准答案，只有立场'},
+  never:{name:'从没有',ch:'未',hint:'做过的人，诚实亮手'},
+  bomb:{name:'炸弹',ch:'炸',hint:'每人说一个，不许重复'}
+};
+
+const SRC={
+  truth:{
+    1:['你手机里使用时间最长的 App 是哪个？每天大概多久？','说一个你一直没改掉的小怪癖。','最近一次笑到停不下来，是因为什么？','如果明天可以什么都不用做，你会做什么？','你吃过最奇怪的东西是什么？','在场谁的第一印象和现在差别最大？差在哪？','说一件你小时候觉得很了不起、现在想起来很好笑的事。','你上一次在公共场合出糗是什么时候？','如果能和在场一个人交换一天人生，你选谁？','说一首你单曲循环最久的歌，并说说为什么。','你有没有偷偷给在场的人起过外号？说出来。','你最长一次连续几天没出过门？','你手机相册里最多的一类照片是什么？','你最擅长、却从没人夸过的一件事是什么？'],
+    2:['最近一次偷偷哭，是因为什么？','你觉得自己最被低估的一点是什么？','说一句你一直想对爸妈说、却没说出口的话。','在场你最羡慕谁？羡慕 TA 什么？','最近让你后悔的一件事是什么？','你对未来最大的担心是什么？','你有没有假装喜欢某件事或某个人很久？','说一个你从没告诉过别人的小目标。','你觉得自己最需要改掉的缺点是什么？','你有没有因为面子，做过一个自己并不想做的决定？','你最怀念的一段时光是什么时候？','你有没有对在场的某个人撒过谎？关于什么？','最近一次觉得自己很孤单，是什么时候？','你最想对五年前的自己说什么？'],
+    3:['你的初吻发生在几岁，在哪里？','你有没有对在场的人动过心，哪怕只有一瞬间？','你手机里有没有一段不敢让人看的聊天记录？说说大概内容。','你有没有在恋爱时偷偷看过对方的手机？','你最放不下的前任（或前暗恋对象）是怎样的人？','你有没有同时对两个人心动过？','说一次你最心动的瞬间，对象不用说是谁。','在场你觉得谁最有魅力？魅力在哪里？','你最想从记忆里删掉的一段感情是什么？','你有没有因为喜欢一个人，故意制造过偶遇？','你理想型身上最不能缺的三个特点是什么？','你说过最后悔的一句“我喜欢你”，或“我们算了吧”，是在什么情况下？','你有没有对朋友的前任或暗恋对象动过心？','在场你觉得谁最适合当恋人？说出理由。'],
+    4:['你最难忘的一次亲密经历是怎样的？说到你愿意的程度。','你身上最敏感的地方在哪里？','你有过一夜情吗？有的话是什么感觉，没有的话会考虑吗？','你有没有对在场的人有过暧昧以外的幻想？不用说是谁。','你的第一次发生在几岁？当时是什么感受？','你在亲密关系里最想被满足的一件事是什么？','你最想尝试、却还没尝试过的一件亲密的事是什么？','你看过最让你脸红的片子或文字，是哪一类？','你最喜欢怎样被亲吻？','你有没有在不合适的场合动过情？在哪里？','你一个人的时候，会想象什么样的场景？说一个你能说的。','什么样的穿着或举动，最能让你心动？','说出你和前任之间最亲密、也最难忘的一个细节。','如果必须选一个，在场你最想和谁共度一个暧昧的夜晚？说出理由。']
+  },
+  dare:{
+    1:['用播音腔，把你今天吃过的每一顿饭报一遍菜单。','模仿在场一个人的口头禅，让大家猜是谁。','做一个你最拿手的表情，保持五秒不许笑。','用肢体演出一个成语，大家猜出来你才能停。','给在场每个人一句真诚的夸奖，不许重复。','学三种动物的叫声，让大家排名。','清唱一首儿歌的第一句，带全套动作。','扮成新闻主播，现场播报在场每个人此刻的表情。','闭上眼睛，让别人把一件东西放在你手里，你来猜它是什么。','单脚站立，直到下一位玩家完成自己的牌。','快速说三遍“四是四，十是十”，说错重来。','和右手边的人对视十秒，笑了就算放弃。'],
+    2:['对在场一个人，认真说出三件你欣赏 TA 的事。','打开相册，讲讲最近第五张照片背后的故事。','给很久没联系的一个人发一句“最近好吗”。','对着空气说一段给十年后自己的话，大家当听众。','说出在场某个人身上，只有你注意到的一个小优点。','让左手边的人替你做一个今天的决定，你不许反驳。','给你最亲近的人发一条“今天想你了”。','表演你紧张时的样子，越真实越好。','念出你备忘录里最近的一条待办。','用三句话，给在场一个人写一段“人生简介”，让 TA 打分。','和右手边的人交换一件随身物品，保管到本局结束。','说出一件你最近为别人做过、但从没被注意到的事。'],
+    3:['给你最近最在意的人发一句“在干嘛”，把回复亮给大家。','用最撩的语气，对在场一个人说一句台词，让 TA 打分。','讲一次你最尴尬的暧昧经历，必须有细节。','和在场一个人（需对方同意）击掌三次，说“我们很合拍”。','指定在场一个人，说出 TA 给你的第一印象，要说实话。','读出你聊天记录里最暧昧的一句，名字可以隐去。','即兴给在场一个人写四句小情诗，当场念出来。','说出你最想和在场哪两个人一起旅行，并给出理由。','亮出你微信置顶的前三个聊天对象。','双手比心，对在场一个人说“你今天很好看”，要认真。','把你最想重来的一次告白，现场演一遍。','对在场一个人，说一句你从没当面说过的真话。'],
+    4:['和在场一个人（需对方同意）对视三十秒，不许说话，不许笑。','为在场一个人（需对方同意）捏肩三十秒，并在 TA 耳边说一句悄悄话。','用最勾人的声音，念一遍你手机里最近一条订单的商品名。','凑到在场一个人耳边（需对方同意），说一句你觉得最撩人的话。','当众给自己上一段感情的“亲密度”打分，并讲一个最难忘的细节。','（需对方同意）和在场一个人十指相扣十秒，说一句“今晚你是我的”。','（需对方同意）用手指在在场一个人的手心写一个词，让 TA 猜。','让在场一个人给你的“撩人指数”打分，你再回敬一句。','用最性感的方式喝一口手边的饮料，让大家打分。','给在场一个人一个拥抱（需对方同意），时间由对方决定。','说出你最想被谁抱一下，并去抱 TA（需对方同意）。','扮成深夜电台主持，用低沉的声音念一段暧昧的情话。']
+  },
+  vote:{
+    1:['谁最可能坐地铁睡过站？','谁最可能把外卖忘在楼下？','谁最可能发了朋友圈又秒删？','谁最可能中了大奖就消失？','谁最适合被派去外星球当第一个人类代表？','谁最可能在 KTV 抢着话筒不放？'],
+    2:['谁最可能半夜突然发来一大段心里话？','谁看起来最坚强，其实最需要被照顾？','谁最可能为了梦想放弃稳定？','谁最可能最先结婚？','谁最能守住秘密？','谁最可能默默帮了你很多却从来不说？'],
+    3:['谁最可能同时被好几个人暗恋？','谁最可能还留着前任的东西？','谁最适合谈一场轰轰烈烈的恋爱？','谁最可能先表白？','谁在亲密关系里最容易吃醋？','谁最可能让人一见钟情？'],
+    4:['谁看起来最闷骚？','谁最可能约会第一天就亲上？','谁的吻技最好？','谁最可能有过一夜情？','谁最适合当“危险的情人”？','谁在亲密关系里最主动？']
+  },
+  rule:{
+    1:['回答前，必须先说一声“报告”。','每句话的结尾都要加一个“喵”。','不许说“不”和“没有”。','游戏期间不许看手机（本游戏除外）。','回答时必须单手捂着胸口。','谁露出牙齿，谁就犯规。'],
+    2:['称呼所有人都要用“您”。','发言前，先向左手边的人点头致意。','称呼别人必须叫全名，不许叫外号。','说话不许用“我”字，违者犯规。']
+  },
+  secret:{
+    1:['下次轮到你之前，悄悄让一个人对你说出“真的假的”。','下次轮到你之前，悄悄让某人对你说“谢谢”。','下次轮到你之前，在别人不察觉时，模仿旁边人的一个小动作三次。'],
+    2:['下次轮到你之前，让某人主动夸你一次。','下次轮到你之前，让两个人同时看向你。','下次轮到你之前，让某人主动问你一个问题。'],
+    3:['下次轮到你之前，让某人对你说“你很有意思”。','下次轮到你之前，让在场所有人都对你说过一次“好”。','下次轮到你之前，让一个人主动把手机、杯子或外套递给你，别开口要。'],
+    4:['下次轮到你之前，悄悄让某人主动靠近你，距离不到一臂。','下次轮到你之前，让某人对你说出“你有点危险”。','下次轮到你之前，让一个人偷偷对你笑三次。']
+  },
+  duo:{
+    1:['轮流说出一件今天让你笑出来的事。','轮流说出对方身上一个你喜欢的小习惯。','各自用三个词形容今天的自己，再互相猜原因。','轮流说一个你最近学会的小技能，并教对方一遍。','各自说出一个对方可能不知道的你的爱好。','轮流说出你们第一次见面时的三个细节。'],
+    2:['轮流说出一句你一直想对对方说、却没找到机会说的话。','各自说出最近一次因为对方而开心的瞬间。','轮流说出你最怕在对方面前暴露的一个缺点。','各自说出一个让你觉得被认真对待的瞬间。','轮流说一个你们之间最难忘的细节。','各自说出你对这段关系的一个期待。'],
+    3:['轮流说出对方身上最让你心动的一个地方。','各自说出你第一次对对方心动的瞬间。','轮流用一句话，形容和对方独处时的感觉。','对视二十秒，然后各自说出你此刻最真实的想法。','轮流说出一个你一直想和对方做、却没提过的约会。','各自说出一个你最想被对方抱着的时刻。'],
+    4:['轮流说出你最想和对方发生的一个亲密场景，说到你们都愿意的程度。','各自说出对方身上最让你有冲动的一个地方。','轮流在对方耳边说一句最撩人的话，再让对方打分。','各自说出你最想被对方怎样亲吻。','轮流说出一个你对对方的幻想，说到你愿意的程度。','一起想一个只属于你们两个的小暗号，用来表示“想靠近”。']
+  },
+  choice:{
+    1:['只能选一个：夏天 | 冬天','一辈子只能吃：辣的 | 甜的','更想拥有：瞬间移动 | 读心术','周末更想：睡一整天 | 出门玩一整天','更能接受：一年不能用手机 | 一年不能吃零食','更想要：高薪但很忙的工作 | 普通但很自由的工作','旅行更想去：海边 | 山里'],
+    2:['更想要：被很多人喜欢 | 被一个人深深理解','更难接受：朋友对你撒谎 | 朋友对你冷淡','更想回到：十八岁 | 十年后','吵架后更想：马上说清楚 | 先各自冷静','更希望对方：很会表达爱 | 很会做实事','如果只能留一个：金钱 | 时间','更怕：被遗忘 | 被误解'],
+    3:['更想要：热烈但短暂的恋爱 | 平淡但长久的陪伴','更能原谅：对方隐瞒了一件事 | 对方说了一句很伤人的话','约会更想：在家依偎一整晚 | 出门走遍整座城市','更想要伴侣：很黏人 | 很独立','更心动：被认真告白 | 被默默照顾','更想被问：你想我吗 | 你爱我吗','更愿意：先表白 | 等对方表白'],
+    4:['亲密时更喜欢：对方主动 | 自己主动','更让你心动：耳边低语 | 深深的拥抱','更想尝试：一整晚都不说话的暧昧 | 一整晚说不完的情话','更难拒绝：对方的眼神 | 对方的声音','更偏爱：灯光暧昧的夜晚 | 阳光很好的清晨','更想要：一场说走就走的双人旅行 | 一个什么都不做的亲密周末','更让你失控：一个很长的吻 | 一次很久的拥抱']
+  },
+  never:{
+    1:['我从来没有在课堂上睡着过。','我从来没有因为睡过头而迟到。','我从来没有把外卖吃到见底后又点了一份。','我从来没有在朋友圈发过后悔的内容。','我从来没有连续熬夜超过三天。','我从来没有给自己的宠物或绿植起过名字。','我从来没有在公共场合认错过人。'],
+    2:['我从来没有偷偷看过别人的聊天记录。','我从来没有为了面子说过谎。','我从来没有因为一首歌哭过。','我从来没有在深夜给前任或旧友发过消息。','我从来没有答应过别人，事后却后悔了。','我从来没有假装在忙，躲开一场聚会。','我从来没有对着镜子练习过告白。'],
+    3:['我从来没有暗恋过在场的任何一个人。','我从来没有被人告白后，还继续装作什么都没发生。','我从来没有同时和两个人暧昧过。','我从来没有因为吃醋，偷偷翻过对方的动态。','我从来没有在聚会上偷偷看过某个人。','我从来没有把一段感情的聊天记录存了很久。','我从来没有因为心动，故意制造过独处的机会。'],
+    4:['我从来没有在深夜因为想念某个人而睡不着。','我从来没有在不合适的场合亲过某个人。','我从来没有对着某个人，脑子里闪过不该有的画面。','我从来没有把暧昧的照片发给过别人。','我从来没有和刚认识不久的人亲近过。','我从来没有在车里或电梯里和人亲热过。','我从来没有因为一个眼神心跳加速到说不出话。']
+  },
+  bomb:{
+    1:['说一种水果','说一个城市','说一部电影','说一种零食','说一首歌的名字','说一种动物','说一件夏天会做的事'],
+    2:['说一件让你紧张的事','说一个你最想去的地方','说一个让你安心的东西','说一个你最怀念的人或地方','说一件你曾经后悔没做的事','说一个你最想改掉的习惯'],
+    3:['说一个让人心动的瞬间','说一个暧昧时会做的小动作','说一个理想型的特点','说一句最适合表白的话','说一个适合约会的地点','说一个让人脸红的词'],
+    4:['说一个撩人的词','说一个让人冲动的场景','说一种让人想靠近的距离','说一个最性感的动作','说一句适合耳边低语的话','说一句只在深夜才会说的话']
+  }
+};
+const FATE=[
+  {k:'shield',title:'免死金牌',x:'收下它。之后任何一张牌，你都可以用它直接跳过，不受惩罚。'},
+  {k:'swap',title:'替身',x:'把这一轮交给一个人。TA 来抽下一张牌，并完成它。'},
+  {k:'ask',title:'指名提问',x:'指定一个人，向 TA 问一个任何问题。TA 回答，或者放弃。'}
+];
+const PEN=['夸右手边的人三句，每句都要具体。','用最夸张的语气大喊三声“我认输”。','做十个深蹲，边做边报数。','学小猫洗脸，持续十秒，不许笑。','起立，向全场鞠躬，说一声“承让”。','喝一口水，同时用手势向每个人道谢。','下一轮开始前，讲一个冷笑话，必须有人笑才算过。','清唱一句你最近听的歌，哪怕走调。','用播音腔把你放弃的原因念一遍。','保持一个定格姿势，直到下一个人完成自己的牌。','对左手边的人说一句你能想到的最撩的话。','给右手边的人抛一个飞吻。','用撒娇的语气，对全场说“我错了嘛”。'];
+const VOTE_FOLLOW={1:'认领这个称号，并发表三句获奖感言。',2:'说说大家为什么会这么想，要说真话。',3:'认领它，并讲一个对应的真实故事。',4:'认领它，并讲一个最刺激的相关经历，说到你愿意的程度。'};
+const TW={truth:34,dare:30,vote:13,rule:6,fate:9,secret:8};
+
+/* ---------- play modes (definitions) ---------- */
+const MAIN=['truth','dare','vote','rule','fate','secret'];
+const MODES=[
+  {id:'draw',g:0,ch:'抽',name:'抽牌',desc:'一人一张，翻到什么做什么。',k:'#6C86F0',min:2,max:8,need:[[MAIN,5]],how:'轮流抽牌。翻开后答题或做冒险，放弃记一次怂，并受一次小惩罚。'},
+  {id:'dice',g:0,ch:'骰',name:'骰子',desc:'三颗骰子定牌型、温度和对象。',k:'#E2B13A',min:2,max:8,need:[[MAIN,5]],how:'每轮掷三颗骰子，分别决定牌型、温度和被点名的人，再翻牌。'},
+  {id:'lie',g:1,ch:'谎',name:'测谎',desc:'答真话或编一个，大家投票。',k:'#F0654A',min:3,max:8,need:[[['truth'],3]],how:'抽一张真心话。答的人可以说真话，也可以现编。其他人传手机投「真」或「假」，猜错的人认罚。'},
+  {id:'bomb',g:1,ch:'炸',name:'炸弹',desc:'传手机说类别，炸在谁手里谁抽牌。',k:'#FF8A3D',min:2,max:8,need:[[['bomb'],3],[MAIN,3]],how:'点火后，手机里有一颗不知道什么时候会爆的炸弹。每人说一个符合类别的词，立刻传给下一位。炸在谁手里，谁抽一张牌。'},
+  {id:'spin',g:1,ch:'转',name:'转瓶子',desc:'转盘选人，再抽牌或两人对问。',k:'#4FB89A',min:2,max:8,need:[[MAIN,5]],how:'转盘指到谁，谁抽一张牌。也可以再转一个人，两个人一起完成一张对问牌。'},
+  {id:'speed',g:1,ch:'速',name:'手速对决',desc:'两人抢点屏幕，慢的人抽牌。',k:'#E4E8EF',min:2,max:8,need:[[MAIN,5]],how:'抽到的两个人面对面，各占屏幕一半。屏幕变绿后先点的人赢，抢跑或慢的人抽牌。'},
+  {id:'choice',g:2,ch:'择',name:'二选一',desc:'偷偷投票，少数派说理由。',k:'#9B83F0',min:3,max:8,need:[[['choice'],3]],how:'出一道二选一。每个人传手机偷偷选，然后一起亮出结果。人少的一边要说出理由。'},
+  {id:'guess',g:2,ch:'猜',name:'猜猜我',desc:'一人偷选，其他人猜 TA 选哪个。',k:'#C98A5A',min:3,max:8,need:[[['choice'],3]],how:'抽一道二选一。轮到的人偷偷选，其他人猜 TA 选了哪个，猜错的人认罚。'},
+  {id:'never',g:2,ch:'未',name:'我从来没有',desc:'做过的人，诚实亮手。',k:'#4FB6D8',min:2,max:8,need:[[['never'],3]],how:'读出「我从来没有……」，做过的人都要承认，再由其中一位讲一个细节。'},
+  {id:'duo',g:2,ch:'双',name:'双人',desc:'只有两个人，轮流问答并升级。',k:'#E0699A',min:2,max:2,need:[[['duo'],3]],how:'专门给两个人。每张牌两个人都要完成，进入更私密的档位前，要先互相确认。'}
+];
+const MODE_BY={};MODES.forEach(m=>{MODE_BY[m.id]=m});
+const GROUPS=['基础','比拼','默契'];
+
+let uid=0;const ALL=[];
+for(const t in SRC)for(const l in SRC[t])for(const x of SRC[t][l])ALL.push({id:++uid,t:t,l:+l,x:x});
+for(const f of FATE)ALL.push({id:++uid,t:'fate',l:0,x:f.x,k:f.k,title:f.title});
+
+/* ---------- state ---------- */
+const savedNames=store.get('dipai.names');
+const S={
+  names:(Array.isArray(savedNames)&&savedNames.length>=2&&savedNames.length<=8&&savedNames.every(x=>typeof x==='string'&&x&&x.length<=6))?savedNames:['小满','阿杰','林夏','老周'],
+  heat:['mild','ramp','late','wild'].includes(store.get('dipai.heat'))?store.get('dipai.heat'):'ramp',
+  players:[],idx:0,drawn:0,used:new Set(),card:null,stage:'',resp:-1,kind:'truth',prompt:'',pen:'',rule:null,rl:'',dice:[null,null,null],mode:(MODES.some(m=>m.id===store.get('dipai.mode'))?store.get('dipai.mode'):'draw'),wn:'',ws:null,duoLv:1,custom:loadCustom(),off:new Set(Array.isArray(store.get('dipai.off'))?store.get('dipai.off'):[]),deck:['builtin','mix','custom'].includes(store.get('dipai.deck'))?store.get('dipai.deck'):'mix'
+};
+const persist=()=>{store.set('dipai.names',S.names);store.set('dipai.heat',S.heat);store.set('dipai.custom',S.custom);store.set('dipai.off',Array.from(S.off));store.set('dipai.deck',S.deck);store.set('dipai.mode',S.mode)};
+const responder=()=>S.resp>=0?S.resp:S.idx;
+
+function weights(){
+  const n=Math.max(1,S.players.length),p=Math.min(1,S.drawn/(n*5));
+  if(S.heat==='mild')return[.6,.34,.06,0];
+  if(S.heat==='late')return[.05,.25,.4,.3];
+  if(S.heat==='wild')return[0,.08,.37,.55];
+  const w1=.72-.57*p,w3=.08+.27*p,w4=.02+.28*p;
+  return[w1,1-w1-w3-w4,w3,w4];
+}
+const temp=()=>{const w=weights();return Math.max(0,Math.min(1,(w[1]+2*w[2]+3*w[3])/3))};
+function weighted(o){let s=0;for(const k in o)s+=o[k];let r=Math.random()*s;for(const k in o){r-=o[k];if(r<0)return k}return Object.keys(o)[0]}
+function draw(ft,fl){
+  const act0=activePool(),act=act0.length?act0:ALL,av={};
+  act.forEach(c=>{if(TW[c.t])av[c.t]=TW[c.t]});
+  const t=(ft&&act.some(c=>c.t===ft))?ft:weighted(av),w=weights(),r=Math.random();
+  const lv=fl||(r<w[0]?1:r<w[0]+w[1]?2:r<w[0]+w[1]+w[2]?3:4);
+  let pool=act.filter(c=>c.t===t&&!S.used.has(c.id)&&(t==='fate'||c.l===lv));
+  if(!pool.length)pool=act.filter(c=>c.t===t&&!S.used.has(c.id));
+  if(!pool.length){
+    act.forEach(c=>{if(c.t===t)S.used.delete(c.id)});
+    pool=act.filter(c=>c.t===t&&(t==='fate'||c.l===lv));
+    if(!pool.length)pool=act.filter(c=>c.t===t);
+  }
+  if(!pool.length)pool=ALL.filter(c=>c.t===t);
+  if(!pool.length)pool=ALL.slice();
+  const c=pick(pool);S.used.add(c.id);return c;
+}
+
+/* ---------- ui helpers ---------- */
+function showScreen(id){if(id!=='table')clearTimers();['setup','table','result','deck'].forEach(s=>{$('#'+s).hidden=s!==id});$('#'+id).scrollTop=0}
+function toast(msg){
+  const t=$('#toast');t.textContent=msg;t.hidden=false;
+  t.style.animation='none';void t.offsetWidth;t.style.animation='';
+  clearTimeout(toast.t);toast.t=setTimeout(()=>{t.hidden=true},2600);
+}
+function modal(html){$('#modal').innerHTML='<div class="sheet" role="dialog" aria-modal="true">'+html+'</div>';$('#modal').hidden=false}
+function closeModal(){$('#modal').hidden=true}
+
+/* ---------- setup ---------- */
+function renderSetup(){
+  $('#chips').innerHTML=S.names.map((n,i)=>'<li class="chip"><span>'+esc(n)+'</span><button class="x" type="button" data-act="del" data-i="'+i+'" aria-label="移除'+esc(n)+'">×</button></li>').join('');
+  $('#cnt').textContent=S.names.length+' / 8';
+  const why=modeCheck();
+  $('#start').disabled=!!why;
+  $('#need').hidden=!why;
+  $('#need').textContent=why;
+  renderModes();
+  renderDeckBlock();
+  document.querySelectorAll('.heat-opt[data-h]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.h===S.heat)));
+}
+function addName(){
+  const inp=$('#nameIn'),v=inp.value.trim();
+  if(!v)return;
+  if(S.names.length>=8){toast('最多 8 个人');return}
+  if(S.names.includes(v)){toast('名字重复了，换一个');inp.select();return}
+  S.names.push(v);inp.value='';persist();renderSetup();inp.focus();
+}
+
+/* ---------- game ---------- */
+function startGame(){
+  if(modeCheck())return;
+  persist();clearTimers();G=null;
+  S.players=S.names.map(n=>({name:n,truth:0,dare:0,skip:0,picked:0,secret:0,shield:0,mission:false,fool:0,sharp:0,boom:0,win:0,ever:0}));
+  S.idx=rnd(S.players.length);S.drawn=0;S.used=new Set();S.rule=null;S.resp=-1;S.duoLv=1;
+  showScreen('table');enterTurn();
+}
+const statLine=p=>'真 '+p.truth+' · 险 '+p.dare+' · 怂 '+p.skip+(p.shield?' · 护符 '+p.shield:'');
+function renderWho(){
+  const p=S.players[responder()];
+  $('#whoLab').textContent=S.rl||(S.resp<0?'轮到':(S.card&&S.card.k==='ask'?'被提问':'被点名'));
+  $('#whoName').textContent=S.wn||p.name;
+  $('#whoStat').textContent=(S.ws===null||S.ws===undefined)?statLine(p):S.ws;
+}
+function renderRule(){
+  const el=$('#rulebar');
+  if(!S.rule){el.hidden=true;el.innerHTML='';return}
+  el.hidden=false;
+  el.innerHTML='<span class="tag">场规</span><span class="rt">'+esc(S.rule.x)+'</span><button class="foul" type="button" data-act="foul">犯规</button>';
+}
+function faceHTML(c,no){
+  const m=T[c.t],len=c.x.length,fs=len<=16?8.6:len<=30?7.3:6.4;
+  const bars=c.l?'<span class="heat" aria-label="温度 '+c.l+' / 4">'+[1,2,3,4].map(i=>'<i class="'+(i<=c.l?'on':'')+'"></i>').join('')+'</span>':'';
+  const title=c.title?'<h3 class="c-title">'+esc(c.title)+'</h3>':'';
+  const cover=c.t==='secret'?'<div class="cover"><b>密</b><span>按住偷看</span></div>':'';
+  return '<div class="mark" aria-hidden="true">'+m.ch+'</div>'+
+    '<div class="c-top"><div class="idx"><b>'+m.ch+'</b><span>'+m.name+'</span></div><div class="meta">'+bars+'<span class="n">'+(no?'No.'+String(no).padStart(2,'0'):'牌库')+'</span></div></div>'+
+    '<div class="c-mid">'+midHTML(c,title,fs)+'</div>'+
+    '<div class="c-bot"><span class="hint">'+m.hint+'</span><div class="idx inv" aria-hidden="true"><b>'+m.ch+'</b></div></div>'+cover;
+}
+function mountCard(c){
+  const box=$('#cardbox');
+  box.classList.remove('deal');
+  box.classList.toggle('idle',!c);
+  box.innerHTML='<div class="card" id="card"><div class="back"><div class="seal"><b>底</b></div><span class="tap">'+(c?'轻点翻牌':(S.stage==='roll'?'先掷骰子':'先答完上一张暗牌'))+'</span></div><div class="face'+(c?' t-'+c.t:'')+'">'+(c?faceHTML(c,S.drawn+1):'')+'</div></div>';
+  box.setAttribute('aria-label',c?'翻开这张牌':'牌已就位');
+  void box.offsetWidth;
+  box.classList.add('deal');
+}
+function enterTurn(){
+  const p=S.players[S.idx];
+  S.resp=-1;S.rl='';S.wn='';S.ws=null;S.kind='truth';$('#dicebar').hidden=true;
+  clearTimers();setStage('card');
+  $('#cnt2').textContent=String(S.drawn+1).padStart(2,'0');
+  $('#cntw').textContent=cardy()?'张':'轮';
+  $('#heatcover').style.width=Math.round((1-temp())*100)+'%';
+  if(p.mission){S.card=null;S.stage='mission';mountCard(null)}
+  else dealStart();
+  renderWho();renderRule();renderPanel();
+}
+function renderPanel(){
+  if(String(S.stage).indexOf('m:')===0){paintMode();return}
+  const st=S.stage,r=S.players[responder()],p=S.players[S.idx];
+  const sh=r.shield>0?'<button class="btn link" type="button" data-act="shield">用一枚护符免罚（剩 '+r.shield+'）</button>':'';
+  const ds='<div class="row"><button class="btn primary" type="button" data-act="done">完成</button><button class="btn ghost" type="button" data-act="skip">放弃</button></div>'+sh;
+  const list=(act,skipSelf)=>'<div class="pick">'+S.players.map((q,i)=>(skipSelf&&i===S.idx)?'':'<button class="btn ghost" type="button" data-act="'+act+'" data-i="'+i+'">'+esc(q.name)+'</button>').join('')+'</div>';
+  let h='';
+  switch(st){
+    case 'roll':
+      h='<div class="dice">'+[0,1,2].map(dieHTML).join('')+'</div><p class="say muted center">骰子决定这一轮的牌型、温度和对象。</p><button class="btn primary wide" type="button" data-act="roll">掷骰</button>';break;
+    case 'rolling':
+      h='<div class="dice">'+[0,1,2].map(dieHTML).join('')+'</div><p class="say muted center">骰子在转……</p>';break;
+    case 'dice_pick':
+      h='<p class="say">骰到了「指定」。选一个人来'+(S.card&&S.card.t==='dare'?'做':'答')+'。</p>'+list('dicepick',true);break;
+    case 'mission':
+      h='<p class="say"><b>'+esc(p.name)+'</b>，上一轮封存的暗牌，得手了吗？</p><div class="row eq"><button class="btn primary" type="button" data-act="mission" data-ok="1">得手了</button><button class="btn ghost" type="button" data-act="mission" data-ok="0">没成功</button></div>';break;
+    case 'ready':
+      h='<p class="say muted">点牌，或按下翻牌。翻开后，大声读给大家听。</p><button class="btn primary wide" type="button" data-act="flip">翻牌</button>';break;
+    case 'open':
+      h='<p class="say muted">'+(S.kind==='dare'?'做到位才算完成。':'回答不必长，但要真。')+'放弃会记一次怂，并受一次小惩罚。</p>'+ds;break;
+    case 'respond':
+      h='<p class="say"><b>'+esc(r.name)+'</b>，'+esc(S.prompt)+'</p>'+ds;break;
+    case 'vote_point':
+      h='<p class="say muted">读出题目。倒数三二一，所有人同时指向一个人。</p><button class="btn primary wide" type="button" data-act="votego">指好了</button>';break;
+    case 'vote_pick':
+      h='<p class="say">谁被指得最多？</p>'+list('vpick',false);break;
+    case 'rule':
+      h='<p class="say muted">'+(S.rule?'立下后，会替换现在的场规。':'立下后一直生效，直到被新的场规替换。')+'</p><button class="btn primary wide" type="button" data-act="ruleset">立为场规</button>';break;
+    case 'fate_shield':
+      h='<p class="say">免死金牌归 <b>'+esc(p.name)+'</b>。</p><button class="btn primary wide" type="button" data-act="fateshield">收下</button>';break;
+    case 'swap_pick':
+      h='<p class="say">把这一轮交给谁？</p>'+list('swap',true);break;
+    case 'ask_pick':
+      h='<p class="say">向谁提问？</p>'+list('askpick',true);break;
+    case 'secret':
+      h='<p class="say muted">背对其他人，按住牌面偷看。记住后松手，再封存。</p><button class="btn primary wide" type="button" data-act="seal">封存暗牌</button>';break;
+    case 'penalty':
+      h='<p class="say"><b>'+esc(r.name)+'</b> 认罚：</p><p class="pen">'+esc(S.pen)+'</p><button class="btn primary wide" type="button" data-act="next">认罚，下一位</button>';break;
+  }
+  $('#panel').innerHTML=h;
+}
+function flip(){
+  if(S.stage!=='ready'||!S.card)return;
+  const c=S.card;
+  $('#card').classList.add('open');
+  S.kind=c.t==='dare'?'dare':'truth';
+  S.stage=modeFlip(c)||{truth:'open',dare:'open',vote:'vote_point',rule:'rule',secret:'secret',fate:c.k==='shield'?'fate_shield':c.k==='swap'?'swap_pick':'ask_pick'}[c.t];
+  renderPanel();
+}
+function endTurn(){S.drawn++;S.idx=(S.idx+1)%S.players.length;enterTurn()}
+
+const A={
+  heat:b=>{S.heat=b.dataset.h;persist();renderSetup()},
+  del:b=>{S.names.splice(+b.dataset.i,1);persist();renderSetup()},
+  start:startGame,
+  flip:flip,
+  done:()=>{
+    const r=S.players[responder()];
+    if(S.kind==='dare')r.dare++;else r.truth++;
+    toast(r.name+' 完成，+1 '+(S.kind==='dare'?'大冒险':'真心话'));
+    endTurn();
+  },
+  skip:()=>{S.players[responder()].skip++;S.pen=pick(PEN);S.stage='penalty';renderPanel();renderWho()},
+  shield:()=>{
+    const r=S.players[responder()];
+    if(r.shield>0){r.shield--;toast(r.name+' 用掉一枚护符，免罚');endTurn()}
+  },
+  next:endTurn,
+  votego:()=>{S.stage='vote_pick';renderPanel()},
+  vpick:b=>{
+    const i=+b.dataset.i,q=S.players[i];
+    q.picked++;S.resp=i;S.kind='truth';S.prompt=VOTE_FOLLOW[S.card.l]||VOTE_FOLLOW[2];S.stage='respond';
+    toast(q.name+' 被点名');renderWho();renderPanel();
+  },
+  ruleset:()=>{S.rule={x:S.card.x};toast('新的场规已立下');endTurn()},
+  fateshield:()=>{const p=S.players[S.idx];p.shield++;toast(p.name+' 收下了免死金牌');endTurn()},
+  swap:b=>{
+    const i=+b.dataset.i;
+    toast(S.players[S.idx].name+' 把这一轮交给了 '+S.players[i].name);
+    S.drawn++;S.idx=i;enterTurn();
+  },
+  askpick:b=>{
+    const i=+b.dataset.i;
+    S.resp=i;S.kind='truth';S.prompt='回答 '+S.players[S.idx].name+' 的提问。提问的人想好问题，对着 TA 说出口。';S.stage='respond';
+    renderWho();renderPanel();
+  },
+  seal:()=>{const p=S.players[S.idx];p.mission=true;toast(p.name+' 的暗牌已封存');endTurn()},
+  mission:b=>{
+    const p=S.players[S.idx];p.mission=false;
+    if(b.dataset.ok==='1'){p.secret++;toast(p.name+' 暗牌得手')}
+    dealStart();renderWho();renderPanel();
+  },
+  foul:()=>modal('<p class="say"><b>谁犯规了？</b></p><div class="pick">'+S.players.map((q,i)=>'<button class="btn ghost" type="button" data-act="foulpick" data-i="'+i+'">'+esc(q.name)+'</button>').join('')+'</div><button class="btn link" type="button" data-act="close">取消</button>'),
+  foulpick:b=>{
+    const q=S.players[+b.dataset.i];q.skip++;
+    modal('<p class="say"><b>'+esc(q.name)+'</b> 犯规，记一次怂，认罚：</p><p class="pen">'+esc(pick(PEN))+'</p><button class="btn primary wide" type="button" data-act="close">好</button>');
+    renderWho();
+  },
+  close:closeModal,
+  end:()=>modal('<p class="say"><b>收局？</b>现在收，就按已经玩完的 '+S.drawn+(cardy()?' 张牌':' 轮')+'结算。</p><div class="row eq"><button class="btn primary" type="button" data-act="finish">收局，看结果</button><button class="btn ghost" type="button" data-act="close">继续玩</button></div>'),
+  finish:()=>{closeModal();renderResult();showScreen('result')},
+  again:startGame,
+  home:()=>{renderSetup();showScreen('setup')},
+  copy:copyReport
+};
+
+/* ---------- result ---------- */
+function awards(){
+  const defs=[['最敢说','truth','句真话','var(--cobalt)'],['最敢玩','dare','次冒险','var(--vermilion)'],['最怂','skip','次放弃','var(--mist)'],['最招人','picked','次被点名','var(--mustard)'],['最会演','secret','张暗牌得手','var(--pine)'],['最会骗','fool','人被骗过','#F0654A'],['最懂人','sharp','次猜中','#4FB6D8'],['最倒霉','boom','次炸在手里','#FF8A3D'],['最快手','win','次手速获胜','#E4E8EF'],['最有故事','ever','次亮手','#E0699A']];
+  return defs.map(d=>{
+    const max=Math.max.apply(null,S.players.map(p=>p[d[1]]));
+    if(max<=0)return null;
+    return{title:d[0],unit:d[2],color:d[3],max:max,names:S.players.filter(p=>p[d[1]]===max).map(p=>p.name)};
+  }).filter(Boolean);
+}
+function renderResult(){
+  const aw=awards();
+  const lines=['底牌 | '+MODE_BY[S.mode].name+' | '+S.players.length+' 人 · '+S.drawn+(cardy()?' 张':' 轮')];
+  aw.forEach(a=>lines.push(a.title+'：'+a.names.join('、')+'（'+a.max+'）'));
+  lines.push('');
+  S.players.forEach(p=>lines.push(p.name+'  真'+p.truth+' 险'+p.dare+' 怂'+p.skip+' 点名'+p.picked+(p.fool?' 骗'+p.fool:'')+(p.sharp?' 猜'+p.sharp:'')+(p.boom?' 炸'+p.boom:'')+(p.win?' 速'+p.win:'')+(p.ever?' 亮'+p.ever:'')));
+  const body=aw.length?aw.map(a=>'<div class="award" style="--k:'+a.color+'"><h3>'+a.title+'</h3><p>'+esc(a.names.join('、'))+'</p><div class="num">'+a.max+'<small>'+a.unit+'</small></div></div>').join(''):'<p class="empty">还没有人翻过牌，下一局再来。</p>';
+  const rows=S.players.map(p=>'<tr><td>'+esc(p.name)+'</td><td>'+p.truth+'</td><td>'+p.dare+'</td><td>'+p.skip+'</td><td>'+p.picked+'</td><td>'+p.secret+'</td><td>'+p.fool+'</td><td>'+p.sharp+'</td></tr>').join('');
+  $('#resBody').innerHTML=
+    '<p class="eyebrow"><span>今晚的底牌</span></p><h1>散场</h1><p class="lede">'+S.players.length+' 人，'+MODE_BY[S.mode].name+'，'+(cardy()?'翻了 '+S.drawn+' 张牌':'玩了 '+S.drawn+' 轮')+'。</p>'+
+    '<div>'+body+'</div>'+
+    '<div class="tblwrap"><table><thead><tr><th>玩家</th><th>真</th><th>险</th><th>怂</th><th>点</th><th>暗</th><th>骗</th><th>猜</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
+    '<p class="cap">真＝真心话　险＝大冒险　怂＝放弃　点＝被点名　暗＝暗牌得手　骗＝骗过的人数　猜＝猜中的次数</p>'+
+    '<textarea id="report" readonly rows="'+(lines.length+1)+'" aria-label="战报文字">'+esc(lines.join('\n'))+'</textarea>';
+}
+function copyReport(){
+  const ta=$('#report');if(!ta)return;
+  const fallback=()=>{
+    ta.focus();ta.select();
+    let ok=false;try{ok=document.execCommand('copy')}catch(e){}
+    toast(ok?'已复制战报':'请长按上方文字，手动复制');
+  };
+  try{
+    if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(ta.value).then(()=>toast('已复制战报'),fallback);
+    else fallback();
+  }catch(e){fallback()}
+}
+
+/* ---------- deck library ---------- */
+const LV=['','轻松','走心','越界','失控'];
+const EDIT_TYPES=['truth','dare','vote','rule','secret','duo','choice','never','bomb'];
+const HINTS={
+  truth:'写一个问题，例如：你最近一次心动是什么时候？',
+  dare:'写一个动作，例如：用方言做一遍自我介绍。',
+  vote:'写成“谁最可能……？”的问句。',
+  rule:'写一条整局生效的规矩，例如：回答前先说“报告”。',
+  secret:'写成“下次轮到你之前，……”的小任务。',
+  duo:'写给两个人的任务，例如：轮流说出对方身上最喜欢的一点。',
+  choice:'用 | 隔开两个选项，例如：更想去：海边 | 山里',
+  never:'写成“我从来没有……”的句子。',
+  bomb:'写一个类别，例如：说一种水果。'
+};
+const D={t:'all',l:0,q:''};
+const M={id:null,t:'truth',l:2};
+
+function loadCustom(){
+  const a=store.get('dipai.custom');
+  if(!Array.isArray(a))return[];
+  return a.filter(c=>c&&typeof c.id==='string'&&typeof c.x==='string'&&c.x&&T[c.t]&&c.t!=='fate'&&[1,2,3,4].includes(c.l)).slice(0,300);
+}
+function activePool(){
+  const a=[];
+  if(S.deck!=='custom')for(const c of ALL)if(!S.off.has(c.x))a.push(c);
+  if(S.deck!=='builtin')for(const c of S.custom)a.push(c);
+  return a;
+}
+const allCards=()=>ALL.concat(S.custom);
+const isCustom=c=>typeof c.id==='string';
+const findCard=id=>allCards().find(c=>String(c.id)===String(id));
+const setRow=(el,html)=>{const sl=el.scrollLeft;el.innerHTML=html;el.scrollLeft=sl};
+
+function renderDeckBlock(){
+  const off=S.off.size;
+  $('#deckStat').textContent='可抽 '+activePool().length+' 张';
+  document.querySelectorAll('.segbtn').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.m===S.deck)));
+  const hint={builtin:'只用内置的牌，你自己写的牌不会出现。',mix:'内置的牌和你写的牌一起洗。',custom:'只抽你自己写的牌。每个玩法需要的牌型，你都得写够。'}[S.deck];
+  $('#deckHint').textContent=hint+'（内置 '+ALL.length+' 张，自定义 '+S.custom.length+' 张'+(off?'，停用 '+off+' 张':'')+'）';
+}
+function filtered(){
+  const q=D.q.trim();
+  return allCards().filter(c=>(D.t==='all'||(D.t==='custom'?isCustom(c):c.t===D.t))&&(!D.l||c.l===D.l)&&(!q||c.x.includes(q)||(c.title&&c.title.includes(q))));
+}
+function rowHTML(c){
+  const m=T[c.t],cu=isCustom(c),off=!cu&&S.off.has(c.x);
+  const lv=c.l?'<span class="lv" aria-label="档位 '+c.l+'">'+[1,2,3,4].map(i=>'<i class="'+(i<=c.l?'on':'')+'"></i>').join('')+'</span>':'';
+  const meta='<span>'+m.name+'</span>'+(c.l?'<span>'+LV[c.l]+'</span>'+lv:'')+(cu?'<span class="tagc">自定义</span>':'');
+  const act=cu
+    ?'<button class="mb" type="button" data-act="editcard" data-id="'+c.id+'">编辑</button><button class="mb danger" type="button" data-act="delcard" data-id="'+c.id+'">删除</button>'
+    :'<button class="sw" type="button" role="switch" aria-checked="'+(!off)+'" aria-label="启用这张牌" data-act="toggle" data-id="'+c.id+'"></button>';
+  return '<li class="drow t-'+c.t+(off?' off':'')+'"><button class="dview" type="button" data-act="viewcard" data-id="'+c.id+'"><span class="dsw">'+m.ch+'</span><span class="dtx"><span class="dt">'+(c.title?esc(c.title)+'：':'')+esc(rowText(c))+'</span><span class="dm">'+meta+'</span></span></button><div class="dact">'+act+'</div></li>';
+}
+function renderDeck(){
+  const all=allCards();
+  const cnt=t=>t==='all'?all.length:t==='custom'?S.custom.length:all.filter(c=>c.t===t).length;
+  setRow($('#fType'),[['all','全部'],['truth','真心话'],['dare','大冒险'],['vote','全员'],['rule','场规'],['fate','命运'],['secret','暗牌'],['duo','对问'],['choice','二选一'],['never','从没有'],['bomb','炸弹'],['custom','自定义']].map(a=>'<button class="fchip" type="button" data-act="ftype" data-v="'+a[0]+'" aria-pressed="'+(D.t===a[0])+'">'+a[1]+'<small>'+cnt(a[0])+'</small></button>').join(''));
+  setRow($('#fLevel'),[[0,'全部档位'],[1,'轻松'],[2,'走心'],[3,'越界'],[4,'失控']].map(a=>'<button class="fchip" type="button" data-act="flevel" data-v="'+a[0]+'" aria-pressed="'+(D.l===a[0])+'">'+a[1]+'</button>').join(''));
+  const note=$('#dnote');
+  note.hidden=S.deck==='mix';
+  note.textContent=S.deck==='custom'?'当前是「仅自定义」，内置牌不会被抽到。':'当前是「内置」，自定义的牌不会被抽到。';
+  const list=filtered();
+  $('#dcount').textContent=list.length+' / '+all.length;
+  $('#dlist').innerHTML=list.length?list.map(rowHTML).join(''):'<li class="dempty">没有符合条件的牌。</li>';
+}
+function syncEditor(){
+  document.querySelectorAll('#modal [data-act="mtype"]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===M.t)));
+  document.querySelectorAll('#modal [data-act="mlevel"]').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.v===M.l)));
+  const ta=$('#mText');
+  if(ta)ta.placeholder=HINTS[M.t];
+  const h=$('#mHint');
+  if(h)h.textContent=M.id?'':'一次可以写多张，一行一张。';
+}
+function openEditor(id){
+  const c=id?findCard(id):null;
+  M.id=c?c.id:null;
+  M.t=c?c.t:(EDIT_TYPES.includes(D.t)?D.t:'truth');
+  M.l=c?c.l:(D.l||2);
+  modal('<p class="say"><b>'+(c?'编辑这张牌':'新增自定义牌')+'</b></p>'+
+    '<p class="lab2">类型</p><div class="pick">'+EDIT_TYPES.map(t=>'<button class="btn ghost" type="button" data-act="mtype" data-v="'+t+'" aria-pressed="false">'+T[t].name+'</button>').join('')+'</div>'+
+    '<p class="lab2">档位</p><div class="pick">'+[1,2,3,4].map(l=>'<button class="btn ghost" type="button" data-act="mlevel" data-v="'+l+'" aria-pressed="false">'+LV[l]+'</button>').join('')+'</div>'+
+    '<textarea id="mText" maxlength="'+(c?60:3000)+'" rows="4" aria-label="牌面文字">'+(c?esc(c.x):'')+'</textarea>'+
+    '<p class="pnote" id="mHint"></p>'+
+    '<div class="row eq"><button class="btn primary" type="button" data-act="savecard">保存</button><button class="btn ghost" type="button" data-act="close">取消</button></div>');
+  syncEditor();
+  if(!c)setTimeout(()=>{const t=$('#mText');if(t)t.focus()},60);
+}
+function saveCard(){
+  const ta=$('#mText'),raw=ta?ta.value:'';
+  const lines=M.id?[raw.trim()]:raw.split(/\n+/).map(s=>s.trim()).filter(Boolean).slice(0,50);
+  const ok=lines.filter(Boolean).map(s=>s.slice(0,60));
+  if(!ok.length){toast('先写点内容');return}
+  if(M.t==='choice'&&ok.some(x=>!/\S\s*[|｜]\s*\S/.test(x))){toast('二选一要写成：选项一 | 选项二');return}
+  if(M.id){
+    const c=S.custom.find(x=>x.id===M.id);
+    if(c){c.t=M.t;c.l=M.l;c.x=ok[0]}
+  }else{
+    if(S.custom.length+ok.length>300){toast('自定义牌最多 300 张');return}
+    ok.forEach(x=>S.custom.push({id:'u'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),t:M.t,l:M.l,x:x}));
+    D.t='custom';D.l=0;D.q='';$('#dq').value='';
+  }
+  persist();closeModal();renderDeck();
+  toast(M.id?'已保存':'已加入 '+ok.length+' 张自定义牌');
+}
+Object.assign(A,{
+  opendeck:()=>{renderDeck();showScreen('deck')},
+  closedeck:()=>{renderSetup();showScreen('setup')},
+  deckmode:b=>{S.deck=b.dataset.m;persist();renderSetup()},
+  ftype:b=>{D.t=b.dataset.v;renderDeck()},
+  flevel:b=>{D.l=+b.dataset.v;renderDeck()},
+  toggle:b=>{
+    const c=findCard(b.dataset.id);if(!c)return;
+    if(S.off.has(c.x))S.off.delete(c.x);else S.off.add(c.x);
+    persist();renderDeck();
+  },
+  bulkon:()=>{filtered().forEach(c=>{if(!isCustom(c))S.off.delete(c.x)});persist();renderDeck();toast('已启用当前筛选下的内置牌')},
+  bulkoff:()=>{filtered().forEach(c=>{if(!isCustom(c))S.off.add(c.x)});persist();renderDeck();toast('已停用当前筛选下的内置牌')},
+  viewcard:b=>{
+    const c=findCard(b.dataset.id);if(!c)return;
+    modal('<div class="pv"><div class="card open"><div class="face t-'+c.t+'">'+faceHTML(c,0)+'</div></div></div>'+
+      '<p class="say muted center">'+T[c.t].name+(c.l?' · '+LV[c.l]:'')+(isCustom(c)?' · 自定义':'')+'</p>'+
+      '<button class="btn ghost wide" type="button" data-act="close">关闭</button>');
+  },
+  newcard:()=>openEditor(null),
+  editcard:b=>openEditor(b.dataset.id),
+  delcard:b=>{
+    const c=findCard(b.dataset.id);if(!c)return;
+    modal('<p class="say"><b>删除这张牌？</b></p><p class="pen">'+esc(c.x)+'</p><div class="row eq"><button class="btn primary" type="button" data-act="delok" data-id="'+c.id+'">删除</button><button class="btn ghost" type="button" data-act="close">取消</button></div>');
+  },
+  delok:b=>{S.custom=S.custom.filter(c=>c.id!==b.dataset.id);persist();closeModal();renderDeck();toast('已删除')},
+  mtype:b=>{M.t=b.dataset.v;syncEditor()},
+  mlevel:b=>{M.l=+b.dataset.v;syncEditor()},
+  savecard:saveCard
+});
+$('#dq').addEventListener('input',e=>{D.q=e.target.value;renderDeck()});
+
+/* ---------- dice mode ---------- */
+const OBJ={self:'自己',next:'下家',prev:'上家',pick:'指定',rand:'随机'};
+const OBJ_FACES=['self','self','next','prev','pick','rand'];
+function dealStart(){
+  clearTimers();G={};S.wn='';S.ws=null;
+  setStage('card');
+  switch(S.mode){
+    case 'dice':S.stage='roll';S.card=null;S.dice=[null,null,null];mountCard(null);break;
+    case 'lie':S.card=draw('truth');S.stage='ready';mountCard(S.card);break;
+    case 'choice':case 'guess':S.card=draw('choice');S.stage='ready';mountCard(S.card);break;
+    case 'never':S.card=draw('never');S.stage='ready';mountCard(S.card);break;
+    case 'duo':duoDeal();break;
+    case 'bomb':bombStart();break;
+    case 'spin':spinStart();break;
+    case 'speed':speedStart();break;
+    default:S.card=draw();S.stage='ready';mountCard(S.card);
+  }
+}
+function typeFaces(){
+  const av=new Set(activePool().map(c=>c.t).filter(t=>TW[t])),list=Array.from(av);
+  const fix=t=>av.has(t)?t:pick(list);
+  const sp=['rule','fate','secret'].filter(t=>av.has(t));
+  const f=['truth','dare','vote','truth','dare'].map(fix);
+  f.push(sp.length?pick(sp):fix('truth'));
+  return f;
+}
+function levelFaces(){
+  const raw=weights().map(x=>x*6),cnt=raw.map(Math.floor);
+  let left=6-cnt.reduce((a,b)=>a+b,0);
+  raw.map((x,i)=>[x-Math.floor(x),i]).sort((a,b)=>b[0]-a[0]).forEach(p=>{if(left>0){cnt[p[1]]++;left--}});
+  const f=[];
+  cnt.forEach((c,i)=>{for(let k=0;k<c;k++)f.push(i+1)});
+  return f;
+}
+function dieParts(i,v){
+  if(v===null||v===undefined)return{cls:'',txt:'?',lab:['牌型','温度','对象'][i]};
+  if(i===0)return{cls:'t-'+v,txt:T[v].ch,lab:T[v].name};
+  if(i===1)return{cls:'lvl l'+v,txt:['','轻','心','越','烈'][v],lab:LV[v]};
+  if(v==='none')return{cls:'off',txt:'无',lab:'不适用'};
+  const t=OBJ[v];
+  return{cls:t.length>1?'sm':'',txt:t,lab:'对象'};
+}
+function dieHTML(i){
+  const p=dieParts(i,S.dice[i]);
+  return '<div class="die" id="d'+i+'"><div class="dface '+p.cls+'"><b>'+p.txt+'</b></div><small>'+p.lab+'</small></div>';
+}
+function paintDie(i,v){
+  const d=$('#d'+i);if(!d)return;
+  const p=dieParts(i,v);
+  d.querySelector('.dface').className='dface '+p.cls;
+  d.querySelector('b').textContent=p.txt;
+  d.querySelector('small').textContent=p.lab;
+}
+function rollDice(){
+  if(S.stage!=='roll')return;
+  S.stage='rolling';
+  const faces=[typeFaces(),levelFaces(),OBJ_FACES];
+  const res=faces.map(f=>f[rnd(6)]);
+  const stops=[false,false,false],at=[700,1050,1400];
+  renderPanel();
+  [0,1,2].forEach(i=>{const d=$('#d'+i);if(d)d.classList.add('rolling')});
+  const timer=setInterval(()=>{[0,1,2].forEach(i=>{if(!stops[i])paintDie(i,faces[i][rnd(6)])})},90);
+  [0,1,2].forEach(i=>setTimeout(()=>{
+    stops[i]=true;S.dice[i]=res[i];paintDie(i,res[i]);
+    const d=$('#d'+i);
+    if(d){d.classList.remove('rolling');d.classList.add('land')}
+    if(i===2){clearInterval(timer);setTimeout(()=>settleDice(res),450)}
+  },at[i]));
+}
+function settleDice(res){
+  if(S.stage!=='rolling'||$('#table').hidden)return;
+  const c=draw(res[0],res[1]),n=S.players.length;
+  const tgt=c.t==='truth'||c.t==='dare';
+  const obj=tgt?res[2]:'none';
+  S.card=c;S.resp=-1;S.rl='';
+  if(tgt){
+    if(obj==='next')S.resp=(S.idx+1)%n;
+    else if(obj==='prev')S.resp=(S.idx-1+n)%n;
+    else if(obj==='rand'){let r;do{r=rnd(n)}while(r===S.idx);S.resp=r}
+    if(S.resp>=0)S.rl='骰子点名';
+  }
+  S.dice=[c.t,c.l||res[1],obj];
+  mountCard(c);
+  const bar=$('#dicebar');
+  bar.innerHTML='<span>牌型<b>'+T[c.t].name+'</b></span><span>温度<b>'+(c.l?LV[c.l]:'—')+'</b></span><span>对象<b>'+(obj==='none'?'—':OBJ[obj])+'</b></span>';
+  bar.hidden=false;
+  S.stage=(tgt&&obj==='pick')?'dice_pick':'ready';
+  renderWho();renderPanel();
+}
+Object.assign(A,{
+  playmode:b=>{if(MODE_BY[b.dataset.pm]){S.mode=b.dataset.pm;persist();renderSetup()}},
+  roll:rollDice,
+  dicepick:b=>{S.resp=+b.dataset.i;S.rl='骰子点名';S.stage='ready';renderWho();renderPanel()}
+});
+
+/* ---------- play modes ---------- */
+let G=null,TMR=[],IVS=[];
+const later=(fn,ms)=>{const id=setTimeout(fn,ms);TMR.push(id);return id};
+const every=(fn,ms)=>{const id=setInterval(fn,ms);IVS.push(id);return id};
+function clearTimers(){TMR.forEach(clearTimeout);IVS.forEach(clearInterval);TMR=[];IVS=[]}
+const cardy=()=>S.mode==='draw'||S.mode==='dice';
+const hasType=t=>activePool().some(c=>c.t===t);
+const first=s=>Array.from(String(s))[0]||'';
+const nm=i=>esc(S.players[i].name);
+const namesOf=a=>a.map(i=>esc(S.players[i].name)).join('、');
+const stamp=i=>'<div class="stamp">'+esc(first(S.players[i].name))+'</div>';
+const rowText=c=>c.t==='choice'?c.x.replace(/\s*[|｜]\s*/,' ／ '):c.x;
+function parseChoice(x){
+  const p=String(x).split(/\s*[|｜]\s*/);
+  let a=p[0]||'',stem='';
+  const m=a.match(/^([^：:]{1,16})[：:](.+)$/);
+  if(m){stem=m[1];a=m[2]}
+  return{stem:stem,a:a.trim(),b:(p[1]||'').trim()};
+}
+function midHTML(c,title,fs){
+  if(c.t==='choice'){
+    const q=parseChoice(c.x);
+    return (q.stem?'<h3 class="c-title sm">'+esc(q.stem)+'</h3>':'')+
+      '<p class="c-text copt" style="--fs:6.6cqw"><i>A</i><span>'+esc(q.a)+'</span></p><p class="c-or">还是</p><p class="c-text copt" style="--fs:6.6cqw"><i>B</i><span>'+esc(q.b)+'</span></p>';
+  }
+  return title+'<p class="c-text" style="--fs:'+fs+'cqw">'+esc(c.x)+'</p>';
+}
+function setStage(k){$('#stagebox').hidden=k!=='card';$('#arena').hidden=k!=='arena'}
+function arenaSet(html){setStage('arena');$('#arena').innerHTML=html}
+function pairOf(){return G&&G.pair?G.pair:[S.idx,(S.idx+1)%S.players.length]}
+
+function modeCheck(){
+  const m=MODE_BY[S.mode],n=S.names.length;
+  if(n<m.min||n>m.max)return m.min===m.max?m.name+'需要刚好 '+m.min+' 个人，现在是 '+n+' 个。':m.name+'至少需要 '+m.min+' 个人。';
+  const pool=activePool();
+  for(const r of m.need){
+    const cnt=pool.filter(c=>r[0].includes(c.t)).length;
+    if(cnt<r[1])return '当前牌库里「'+r[0].map(t=>T[t].name).join('、')+'」不够，至少要 '+r[1]+' 张。';
+  }
+  return '';
+}
+function renderModes(){
+  const n=S.names.length;
+  let h='';
+  GROUPS.forEach((g,gi)=>{
+    h+='<p class="grp">'+g+'</p><div class="modegrid">'+MODES.filter(m=>m.g===gi).map(m=>{
+      const bad=n<m.min||n>m.max,tag=(m.min===m.max?m.min:m.min+'–'+m.max)+' 人';
+      return '<button class="mode" type="button" data-act="playmode" data-pm="'+m.id+'" aria-pressed="'+(m.id===S.mode)+'" style="--k:'+m.k+'"><span class="mh"><b class="mg">'+m.ch+'</b><span class="mtag'+(bad?' warn':'')+'">'+tag+'</span></span><span class="mn">'+m.name+'</span><span class="md">'+m.desc+'</span></button>';
+    }).join('')+'</div>';
+  });
+  $('#modes').innerHTML=h;
+  $('#modeHint').textContent=MODE_BY[S.mode].how;
+}
+
+/* hand the turn to one player and deal an ordinary card */
+function toCard(idx){
+  S.idx=idx;S.resp=-1;S.rl='';S.wn='';S.ws=null;
+  S.card=draw();S.stage='ready';setStage('card');mountCard(S.card);
+  renderWho();renderPanel();
+}
+function modeFlip(c){
+  if(c.t==='duo')return 'm:duo_play';
+  if(c.t==='choice')return S.mode==='guess'?'m:guess_go':'m:choice_go';
+  if(c.t==='never')return 'm:never_go';
+  if(c.t==='truth'&&S.mode==='lie')return 'm:lie_answer';
+  return null;
+}
+
+/* shared helpers for the pass-the-phone vote */
+function tally(v,sel){
+  return '<div class="tally">'+v.opts.map((o,k)=>{
+    const ns=v.voters.filter(i=>v.votes[i]===k).map(i=>esc(S.players[i].name));
+    return '<div class="tcol'+(sel===k?' hit':'')+'"><b class="tn">'+v.mk[k]+'</b><span class="tq">'+esc(o)+'</span><span class="tc">'+ns.length+'</span><span class="tw">'+(ns.length?ns.join('、'):'无人')+'</span></div>';
+  }).join('')+'</div>';
+}
+function penaltyHTML(r,okText){
+  return r.wrong.length
+    ?'<p class="say"><b>'+namesOf(r.wrong)+'</b> 猜错了，认罚：</p><p class="pen">'+esc(r.pen)+'</p><button class="btn primary wide" type="button" data-act="next">认罚，下一位</button>'
+    :'<p class="say muted">'+(okText||'全员猜对。')+'</p><button class="btn primary wide" type="button" data-act="next">下一位</button>';
+}
+function ringOrder(from,skipSelf){
+  const n=S.players.length,a=[];
+  for(let k=skipSelf?1:0;k<n;k++)a.push((from+k)%n);
+  return a;
+}
+
+/* bomb */
+function bombStart(){
+  const c=draw('bomb');
+  G={bomb:{card:c,holder:S.idx,passes:0,live:false,fuse:9000+rnd(15000),t0:0}};
+  S.resp=S.idx;S.rl='炸弹在';S.stage='m:bomb_ready';
+}
+function bombArena(kind){
+  const b=G.bomb;
+  return '<div class="bomb'+(kind==='boom'?' boom':'')+'" id="bomb" style="--pulse:1.1s"><i class="fuse"></i><b class="bglyph">'+(kind==='boom'?'爆':'炸')+'</b></div>'+
+    (kind==='boom'
+      ?'<p class="big2">炸在 <b>'+nm(b.holder)+'</b> 手里</p>'
+      :'<p class="eyebrow">类别</p><p class="bcat">'+esc(b.card.x)+'</p><p class="pnote" id="bpass">'+(b.live?'已传 '+b.passes+' 次':'点火后才开始计时')+'</p>');
+}
+function bombBoom(){
+  if(S.stage!=='m:bomb_live'||!G||!G.bomb)return;
+  IVS.forEach(clearInterval);IVS=[];
+  const b=G.bomb;
+  S.players[b.holder].boom++;
+  S.stage='m:bomb_boom';S.resp=b.holder;S.rl='炸了';
+  renderWho();renderPanel();
+}
+
+/* spin */
+function spinStart(){
+  G={spin:{ang:0,sel:-1,first:-1}};
+  S.wn='转一转';S.rl='瓶子';S.ws='';S.resp=-1;S.stage='m:spin_ready';
+}
+function wheelHTML(){
+  const n=S.players.length;
+  const chips=S.players.map((q,i)=>{
+    const a=i*2*Math.PI/n;
+    return '<span class="wn" id="wn'+i+'" style="left:'+(50+39*Math.sin(a)).toFixed(2)+'%;top:'+(50-39*Math.cos(a)).toFixed(2)+'%">'+esc(q.name)+'</span>';
+  }).join('');
+  return '<div class="wheel" id="wheel">'+chips+'<div class="needle" id="needle" style="transform:rotate('+G.spin.ang+'deg)"><i></i></div><div class="hub"></div></div><p class="pnote">指到谁，谁就是这一轮的主角。</p>';
+}
+function spinLand(j){
+  if(S.stage!=='m:spin_going'||!G||!G.spin)return;
+  const sp=G.spin,e=$('#wn'+j);
+  if(e)e.classList.add(sp.first>=0?'hit2':'hit');
+  if(sp.first>=0){
+    G.pair=[sp.first,j];
+    S.stage='m:spin_pair';S.resp=-1;S.rl='对问';S.wn=S.players[sp.first].name+' × '+S.players[j].name;S.ws='';
+  }else{
+    S.stage='m:spin_landed';S.resp=j;S.rl='选中';S.wn='';S.ws=null;
+  }
+  renderWho();renderPanel();
+}
+
+/* speed duel */
+function speedStart(){
+  const n=S.players.length,a=S.idx;
+  let b;do{b=rnd(n)}while(b===a);
+  G={sp:{a:a,b:b,state:'ready',t0:0,res:null}};
+  S.wn=S.players[a].name+' vs '+S.players[b].name;S.rl='对决';S.ws='';S.resp=-1;S.stage='m:speed_ready';
+}
+function duelHTML(){
+  const s=G.sp;
+  const pad=(side,i)=>'<div class="pad p'+side+'" data-side="'+side+'"><span class="pn">'+nm(i)+'</span><span class="pt" id="pt'+side+'">准备</span></div>';
+  return '<div class="duel" id="duel">'+pad(1,s.b)+'<div class="vs">VS</div>'+pad(0,s.a)+'</div>';
+}
+function speedGo(){
+  if(!G||!G.sp||G.sp.state!=='wait')return;
+  G.sp.state='go';G.sp.t0=performance.now();S.stage='m:speed_go';
+  document.querySelectorAll('.pad').forEach(p=>p.classList.add('go'));
+  [0,1].forEach(s=>{const t=$('#pt'+s);if(t)t.textContent='点！'});
+  renderPanel();
+}
+function speedEnd(ws,ls,early){
+  const sp=G.sp,t=Math.round(performance.now()-sp.t0);
+  sp.state='done';clearTimers();
+  const wi=ws===0?sp.a:sp.b,li=ls===0?sp.a:sp.b;
+  S.players[wi].win++;
+  sp.res={w:wi,l:li,early:early,t:t};
+  document.querySelectorAll('.pad').forEach(p=>{p.classList.remove('go');p.classList.add(+p.dataset.side===ws?'win':'lose')});
+  const tw=$('#pt'+ws),tl=$('#pt'+ls);
+  if(tw)tw.textContent=early?'对手抢跑，你赢了':(t/1000).toFixed(3)+' 秒';
+  if(tl)tl.textContent=early?'抢跑':'慢了一步';
+  S.stage='m:speed_done';renderPanel();
+}
+function padHit(side){
+  const sp=G&&G.sp;if(!sp)return;
+  if(sp.state==='wait')speedEnd(1-side,side,true);
+  else if(sp.state==='go')speedEnd(side,1-side,false);
+}
+
+/* duo */
+function duoDeal(){
+  const c=draw('duo');
+  if(c.l>=3&&c.l>S.duoLv){G.dc=c;S.stage='m:duo_confirm';return}
+  S.duoLv=Math.max(S.duoLv,c.l);
+  S.card=c;S.stage='ready';mountCard(c);
+}
+
+/* vote endings */
+function lieVoted(){S.resp=-1;S.rl='';S.stage='m:lie_reveal';renderWho();renderPanel()}
+function choiceVoted(){
+  const v=G.v,c0=v.voters.filter(i=>v.votes[i]===0),c1=v.voters.filter(i=>v.votes[i]===1);
+  const uni=!c0.length||!c1.length,tie=c0.length===c1.length;
+  const minor=(!uni&&!tie)?(c0.length<c1.length?c0:c1):null;
+  if(minor)minor.forEach(i=>{S.players[i].truth++});
+  G.res={c0:c0,c1:c1,minor:minor,tie:tie&&!uni,uni:uni};
+  S.resp=-1;S.rl='';S.stage='m:choice_reveal';renderWho();renderPanel();
+}
+function guessPicked(){
+  const q=G.q;
+  G.pick=G.v.votes[S.idx];
+  G.v={voters:ringOrder(S.idx,true),i:0,votes:{},opts:[q.a,q.b],mk:['A','B'],lab:'轮到猜',pass:'猜猜 '+S.players[S.idx].name+' 选了哪个。选好后传给下一位。',qlab:'二选一',q:q.stem||'TA 会选哪个？',ask:'猜猜 '+S.players[S.idx].name+' 会选哪个？',done:guessDone};
+  S.stage='m:vpass';renderPanel();
+}
+function guessDone(){
+  const v=G.v,own=S.players[S.idx];
+  const right=v.voters.filter(i=>v.votes[i]===G.pick),wrong=v.voters.filter(i=>v.votes[i]!==G.pick);
+  own.truth++;own.fool+=wrong.length;
+  right.forEach(i=>{S.players[i].sharp++});wrong.forEach(i=>{S.players[i].skip++});
+  G.res={right:right,wrong:wrong,pen:pick(PEN)};
+  S.resp=-1;S.rl='';S.stage='m:guess_result';renderWho();renderPanel();
+}
+
+/* one painter for every mode stage: arena on top, panel below */
+function paintMode(){
+  const st=S.stage;
+  let ar,h='';
+  const shield=()=>{const r=S.players[responder()];return r.shield>0?'<button class="btn link" type="button" data-act="shield">用一枚护符免罚（剩 '+r.shield+'）</button>':''};
+  switch(st){
+    case 'm:vpass':{
+      const v=G.v,i=v.voters[v.i];
+      S.resp=i;S.rl=v.lab;renderWho();
+      ar=stamp(i)+'<p class="big2">把手机交给 <b>'+nm(i)+'</b></p><p class="say muted">'+esc(v.pass)+'</p><p class="pnote">第 '+(v.i+1)+' / '+v.voters.length+' 位</p>';
+      h='<button class="btn primary wide" type="button" data-act="vgo">我是 '+nm(i)+'，开始</button>';
+      break}
+    case 'm:vcast':{
+      const v=G.v;
+      ar='<div class="quote"><small>'+esc(v.qlab)+'</small>'+esc(v.q)+'</div><p class="say">'+esc(v.ask)+'</p>';
+      h='<div class="opts">'+v.opts.map((o,k)=>'<button class="opt" type="button" data-act="vcast" data-k="'+k+'"><b>'+v.mk[k]+'</b><span>'+esc(o)+'</span></button>').join('')+'</div>';
+      break}
+    case 'm:lie_answer':
+      h='<p class="say"><b>'+nm(S.idx)+'</b>，回答这张牌。可以说真话，也可以现编，别被看出来。</p><div class="row"><button class="btn primary" type="button" data-act="lieask">答完了，开始投票</button><button class="btn ghost" type="button" data-act="skip">放弃</button></div>'+shield();
+      break;
+    case 'm:lie_reveal':
+      ar='<p class="eyebrow">票数</p>'+tally(G.v,-1);
+      h='<p class="say"><b>'+nm(S.idx)+'</b>，揭晓：你刚才说的是——</p><div class="row eq"><button class="btn primary" type="button" data-act="lietruth" data-v="0">真话</button><button class="btn ghost" type="button" data-act="lietruth" data-v="1">假话</button></div>';
+      break;
+    case 'm:lie_result':{
+      const r=G.res;
+      ar='<p class="eyebrow">答案</p><div class="big">'+(r.t===0?'真话':'假话')+'</div><p class="say">'+(r.wrong.length?'骗过了 <b>'+r.wrong.length+'</b> 人':'没骗过任何人')+'</p>'+tally(G.v,r.t);
+      h=penaltyHTML(r,'全员猜对，演技还要练练。');
+      break}
+    case 'm:choice_go':
+      h='<p class="say muted">读出两个选项，然后从 <b>'+nm(S.idx)+'</b> 开始传手机，每个人偷偷选一个。</p><button class="btn primary wide" type="button" data-act="choicego">开始投票</button>';
+      break;
+    case 'm:choice_reveal':{
+      const r=G.res;
+      ar='<p class="eyebrow">结果</p>'+tally(G.v,r.minor?(r.minor===r.c0?0:1):-1);
+      h=(r.uni?'<p class="say">全员选了同一边，默契满分。</p>':r.tie?'<p class="say">平局。两边各派一个人，说出自己的理由。</p>':'<p class="say"><b>'+namesOf(r.minor)+'</b> 是少数派。说说你们的理由。</p>')+'<button class="btn primary wide" type="button" data-act="next">下一轮</button>';
+      break}
+    case 'm:guess_go':
+      h='<p class="say"><b>'+nm(S.idx)+'</b> 先偷偷选，其他人背过身去。</p><button class="btn primary wide" type="button" data-act="guessgo">我来选</button>';
+      break;
+    case 'm:guess_result':{
+      const r=G.res,q=G.q,pk=G.pick;
+      ar='<p class="eyebrow">'+nm(S.idx)+' 选了</p><div class="big">'+'AB'[pk]+'</div><p class="say">'+esc(pk===0?q.a:q.b)+'</p>'+tally(G.v,pk);
+      h=penaltyHTML(r,'全员猜中。你太好懂了。');
+      break}
+    case 'm:never_go':{
+      G.ev=G.ev||new Set();
+      h='<p class="say"><b>'+nm(S.idx)+'</b> 读出来。做过的人，点自己的名字。</p><div class="pick">'+S.players.map((q,i)=>'<button class="btn ghost" type="button" data-act="evtoggle" data-i="'+i+'" aria-pressed="'+G.ev.has(i)+'">'+esc(q.name)+'</button>').join('')+'</div><button class="btn primary wide" type="button" data-act="evdone">'+(G.ev.size?'记录，继续':'没人做过，下一张')+'</button>';
+      break}
+    case 'm:never_after':
+      h='<p class="say"><b>'+namesOf(G.evl)+'</b> 做过。由 <b>'+nm(G.evpick)+'</b> 先讲一个细节，其他人可以追问。</p><button class="btn primary wide" type="button" data-act="next">讲完了，下一张</button>';
+      break;
+    case 'm:bomb_ready':
+      ar=bombArena('ready');
+      h='<p class="say muted">点火后，炸弹会在随机的时间爆炸。每人说一个符合类别的词，立刻传给下一位。</p><button class="btn primary wide" type="button" data-act="bombgo">点火</button>';
+      break;
+    case 'm:bomb_live':{
+      ar=false;
+      const b=G.bomb;
+      h='<button class="btn primary wide" type="button" data-act="bombpass">说完了，传给 '+nm((b.holder+1)%S.players.length)+' →</button>';
+      break}
+    case 'm:bomb_boom':
+      ar=bombArena('boom');
+      h='<p class="say"><b>'+nm(G.bomb.holder)+'</b> 抽一张牌认罚。</p><button class="btn primary wide" type="button" data-act="bombcard">抽牌</button>';
+      break;
+    case 'm:spin_ready':
+      ar=wheelHTML();
+      h='<p class="say muted">转一转，指到谁，谁就抽牌。</p><button class="btn primary wide" type="button" data-act="spingo">转</button>';
+      break;
+    case 'm:spin_going':
+      ar=false;h='<p class="say muted center">转着呢……</p>';
+      break;
+    case 'm:spin_landed':
+      ar=false;
+      h='<p class="say">转到了 <b>'+nm(G.spin.sel)+'</b>。</p>'+(hasType('duo')
+        ?'<div class="row eq"><button class="btn primary" type="button" data-act="spincard">抽牌</button><button class="btn ghost" type="button" data-act="spinpair">加一人对问</button></div>'
+        :'<button class="btn primary wide" type="button" data-act="spincard">抽牌</button>');
+      break;
+    case 'm:spin_pair':
+      ar=false;
+      h='<p class="say"><b>'+nm(G.pair[0])+'</b> 和 <b>'+nm(G.pair[1])+'</b> 对问。</p><button class="btn primary wide" type="button" data-act="pairdraw">抽对问牌</button>';
+      break;
+    case 'm:speed_ready':
+      ar=duelHTML();
+      h='<p class="say muted">两个人面对面，各点自己那一半。屏幕变绿，先点的人赢。提前点就是抢跑。</p><button class="btn primary wide" type="button" data-act="speedgo">开始倒数</button>';
+      break;
+    case 'm:speed_wait':
+      ar=false;h='<p class="say muted center">别急，等变绿……</p>';
+      break;
+    case 'm:speed_go':
+      ar=false;h='<p class="say center"><b>点！</b></p>';
+      break;
+    case 'm:speed_done':{
+      ar=false;
+      const r=G.sp.res;
+      h='<p class="say"><b>'+nm(r.l)+'</b> '+(r.early?'抢跑了':'慢了一步')+'，抽一张牌认罚。</p><button class="btn primary wide" type="button" data-act="speedcard">抽牌</button>';
+      break}
+    case 'm:duo_confirm':{
+      const c=G.dc;
+      ar='<p class="eyebrow">下一档 · '+LV[c.l]+'</p><div class="big">要更私密了</div><p class="say muted">接下来的牌会更亲近一些。两个人都愿意继续吗？</p>';
+      h='<div class="row eq"><button class="btn primary" type="button" data-act="duoyes">都愿意</button><button class="btn ghost" type="button" data-act="duono">先保持现在</button></div>';
+      break}
+    case 'm:duo_play':{
+      const pr=pairOf();
+      h='<p class="say"><b>'+nm(pr[0])+'</b> 先读出来，然后两个人轮流完成。</p><div class="row"><button class="btn primary" type="button" data-act="duodone">我们完成了</button><button class="btn ghost" type="button" data-act="duoskip">有人放弃</button></div>';
+      break}
+    case 'm:duo_who':{
+      const pr=pairOf();
+      h='<p class="say">谁放弃了？</p><div class="pick">'+pr.map(i=>'<button class="btn ghost" type="button" data-act="duoskipwho" data-i="'+i+'">'+nm(i)+'</button>').join('')+'</div>';
+      break}
+  }
+  if(ar===undefined)setStage('card');
+  else if(ar!==false)arenaSet(ar);
+  $('#panel').style.minHeight=st.indexOf('m:speed')===0?'108px':'';
+  $('#panel').innerHTML=h;
+}
+
+Object.assign(A,{
+  /* vote engine */
+  vgo:()=>{S.stage='m:vcast';renderPanel()},
+  vcast:b=>{
+    const v=G.v,i=v.voters[v.i];
+    v.votes[i]=+b.dataset.k;v.i++;
+    if(v.i<v.voters.length){S.stage='m:vpass';renderPanel()}
+    else{S.resp=-1;S.rl='';v.done()}
+  },
+  /* lie */
+  lieask:()=>{
+    G.v={voters:ringOrder(S.idx,true),i:0,votes:{},opts:['真话','假话'],mk:['',''],lab:'轮到投票',pass:'其他人别偷看屏幕。选好后，把手机传给下一位。',qlab:'题目 · '+S.players[S.idx].name+' 作答',q:S.card.x,ask:'TA 说的是真话，还是现编的？',done:lieVoted};
+    S.stage='m:vpass';renderPanel();
+  },
+  lietruth:b=>{
+    const t=+b.dataset.v,v=G.v,own=S.players[S.idx];
+    const right=v.voters.filter(i=>v.votes[i]===t),wrong=v.voters.filter(i=>v.votes[i]!==t);
+    own.truth++;own.fool+=wrong.length;
+    right.forEach(i=>{S.players[i].sharp++});wrong.forEach(i=>{S.players[i].skip++});
+    G.res={t:t,right:right,wrong:wrong,pen:pick(PEN)};
+    S.stage='m:lie_result';renderPanel();
+  },
+  /* choice and guess */
+  choicego:()=>{
+    const q=parseChoice(S.card.x);
+    G.v={voters:ringOrder(S.idx,false),i:0,votes:{},opts:[q.a,q.b],mk:['A','B'],lab:'轮到投票',pass:'选好后不要出声，把手机传给下一位。',qlab:'二选一',q:q.stem||'没有标准答案',ask:'你会选哪个？',done:choiceVoted};
+    S.stage='m:vpass';renderPanel();
+  },
+  guessgo:()=>{
+    const q=parseChoice(S.card.x);
+    G.q=q;
+    G.v={voters:[S.idx],i:0,votes:{},opts:[q.a,q.b],mk:['A','B'],lab:'偷偷选',pass:'只有 '+S.players[S.idx].name+' 能看屏幕。选好后，把手机放回桌面。',qlab:'二选一',q:q.stem||'你会选哪个？',ask:'你会选哪个？别让别人看见。',done:guessPicked};
+    S.stage='m:vpass';renderPanel();
+  },
+  /* never have I ever */
+  evtoggle:b=>{
+    G.ev=G.ev||new Set();
+    const i=+b.dataset.i;
+    if(G.ev.has(i))G.ev.delete(i);else G.ev.add(i);
+    renderPanel();
+  },
+  evdone:()=>{
+    if(!G.ev||!G.ev.size){toast('没人做过，全员清白');endTurn();return}
+    const l=Array.from(G.ev).sort((a,b)=>a-b);
+    l.forEach(i=>{S.players[i].ever++});
+    G.evl=l;G.evpick=pick(l);S.stage='m:never_after';renderPanel();
+  },
+  /* bomb */
+  bombgo:()=>{
+    const b=G.bomb;
+    b.live=true;b.t0=Date.now();S.stage='m:bomb_live';
+    const el=$('#bomb');if(el)el.classList.add('live');
+    const bp=$('#bpass');if(bp)bp.textContent='已传 0 次';
+    later(bombBoom,b.fuse);
+    every(()=>{
+      const e=$('#bomb');
+      if(!e||!G||!G.bomb)return;
+      const r=Math.min(1,(Date.now()-G.bomb.t0)/G.bomb.fuse);
+      e.style.setProperty('--pulse',(1.1-.85*r).toFixed(2)+'s');
+    },400);
+    renderPanel();
+  },
+  bombpass:()=>{
+    const b=G.bomb;
+    b.holder=(b.holder+1)%S.players.length;b.passes++;S.resp=b.holder;
+    renderWho();
+    const bp=$('#bpass');if(bp)bp.textContent='已传 '+b.passes+' 次';
+    renderPanel();
+  },
+  bombcard:()=>toCard(G.bomb.holder),
+  /* spin */
+  spingo:()=>{
+    const sp=G.spin,n=S.players.length,cand=[];
+    for(let i=0;i<n;i++)if(i!==sp.first)cand.push(i);
+    const j=pick(cand),cur=sp.ang;
+    const tgt=j*360/n+(Math.random()-.5)*(360/n)*.6;
+    const delta=(((tgt-cur)%360)+360)%360;
+    sp.ang=cur+360*(4+rnd(2))+delta;sp.sel=j;
+    const nd=$('#needle');if(nd)nd.style.transform='rotate('+sp.ang+'deg)';
+    S.stage='m:spin_going';renderPanel();
+    later(()=>spinLand(j),3500);
+  },
+  spincard:()=>toCard(G.spin.sel),
+  spinpair:()=>{
+    G.spin.first=G.spin.sel;S.resp=-1;S.rl='对问';S.wn='再转一人';S.ws='';
+    A.spingo();renderWho();
+  },
+  pairdraw:()=>{
+    const pr=G.pair;
+    S.idx=pr[0];S.resp=-1;S.rl='对问';S.wn=S.players[pr[0]].name+' × '+S.players[pr[1]].name;S.ws='';
+    S.card=draw('duo');S.stage='ready';setStage('card');mountCard(S.card);
+    renderWho();renderPanel();
+  },
+  /* speed */
+  speedgo:()=>{
+    G.sp.state='wait';S.stage='m:speed_wait';
+    [0,1].forEach(s=>{const t=$('#pt'+s);if(t)t.textContent='等绿灯'});
+    later(speedGo,1500+rnd(3500));
+    renderPanel();
+  },
+  speedcard:()=>toCard(G.sp.res.l),
+  /* duo */
+  duoyes:()=>{
+    S.duoLv=G.dc.l;S.card=G.dc;S.stage='ready';setStage('card');mountCard(S.card);renderPanel();
+  },
+  duono:()=>{
+    const c=draw('duo',S.duoLv);
+    S.card=c;S.stage='ready';setStage('card');mountCard(c);renderPanel();
+  },
+  duodone:()=>{
+    const pr=pairOf();
+    pr.forEach(i=>{S.players[i].truth++});
+    toast('两个人都完成了');
+    endTurn();
+  },
+  duoskip:()=>{S.stage='m:duo_who';renderPanel()},
+  duoskipwho:b=>{S.resp=+b.dataset.i;S.rl='认罚';A.skip()}
+});
+document.addEventListener('pointerdown',e=>{
+  const pd=e.target.closest?e.target.closest('.pad'):null;
+  if(pd&&G&&G.sp)padHit(+pd.dataset.side);
+});
+
+/* ---------- events ---------- */
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-act]');
+  if(b&&A[b.dataset.act])A[b.dataset.act](b);
+});
+$('#modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal()});
+$('#addf').addEventListener('submit',e=>{e.preventDefault();addName()});
+$('#cardbox').addEventListener('keydown',e=>{
+  if((e.key==='Enter'||e.key===' ')&&e.target===e.currentTarget){e.preventDefault();flip()}
+});
+$('#cardbox').addEventListener('animationend',e=>{if(e.target===e.currentTarget)e.currentTarget.classList.remove('deal')});
+document.addEventListener('pointerdown',e=>{
+  if(e.target.closest('.cover')){const c=$('#card');if(c)c.classList.add('peek')}
+});
+const unpeek=()=>{const c=$('#card');if(c)c.classList.remove('peek')};
+window.addEventListener('pointerup',unpeek);
+window.addEventListener('pointercancel',unpeek);
+window.addEventListener('blur',unpeek);
+document.addEventListener('visibilitychange',unpeek);
+document.addEventListener('contextmenu',e=>{if(e.target.closest('.cover'))e.preventDefault()});
+
+renderSetup();showScreen('setup');
+})();
+</script>
+</body>
+</html>
